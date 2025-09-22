@@ -1,9 +1,10 @@
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Search, Heart, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from "react-router-dom";
 
-const Header = () => {
+const Header: React.FC = () => {
   const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
