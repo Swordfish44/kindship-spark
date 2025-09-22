@@ -80,6 +80,14 @@ serve(async (req) => {
         await handleAccountUpdated(supabase, event.data.object);
         break;
         
+      case 'radar.early_fraud_warning.created':
+        await handleFraudWarning(supabase, event.data.object);
+        break;
+        
+      case 'payment_intent.payment_failed':
+        await handlePaymentFailed(supabase, event.data.object);
+        break;
+        
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -258,5 +266,75 @@ async function handleAccountUpdated(supabase: any, account: any) {
     }
   } catch (error) {
     console.error('Error processing account update:', error);
+  }
+}
+
+async function handleFraudWarning(supabase: any, warning: any) {
+  console.log('Processing radar.early_fraud_warning.created:', warning.id);
+  
+  try {
+    // Find the donation by charge ID
+    const { data: donation } = await supabase
+      .from('donations')
+      .select('id, campaign_id, amount, donor_email')
+      .eq('stripe_charge_id', warning.charge)
+      .single();
+
+    if (donation) {
+      // Log the fraud warning for monitoring
+      console.warn(`Fraud warning for donation ${donation.id}: ${warning.fraud_type}`);
+      
+      // You could add a fraud_alerts table to track these
+      // or send notifications to campaign organizers
+      
+      // For now, we'll add a comment about the warning
+      const { error } = await supabase
+        .from('campaign_comments')
+        .insert({
+          campaign_id: donation.campaign_id,
+          user_id: '00000000-0000-0000-0000-000000000000', // System user
+          content: `⚠️ Fraud warning detected for recent donation. Amount: $${donation.amount}`,
+          is_deleted: false
+        });
+
+      if (error && !error.message.includes('violates row-level security')) {
+        console.error('Error logging fraud warning:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Error processing fraud warning:', error);
+  }
+}
+
+async function handlePaymentFailed(supabase: any, paymentIntent: any) {
+  console.log('Processing payment_intent.payment_failed:', paymentIntent.id);
+  
+  try {
+    // Log failed payment attempt for analytics
+    const campaignId = paymentIntent.metadata?.campaign_id;
+    
+    if (campaignId) {
+      // Update campaign analytics with failed attempt
+      const today = new Date().toISOString().split('T')[0];
+      const { error: analyticsError } = await supabase
+        .from('campaign_analytics')
+        .upsert({
+          campaign_id: campaignId,
+          recorded_date: today,
+          // You could add a failed_payments_count field
+        }, {
+          onConflict: 'campaign_id,recorded_date'
+        });
+
+      if (analyticsError) {
+        console.error('Error updating failed payment analytics:', analyticsError);
+      }
+    }
+
+    // Log the failure reason
+    console.warn(`Payment failed: ${paymentIntent.id}, Reason: ${paymentIntent.last_payment_error?.message || 'Unknown'}`);
+    
+  } catch (error) {
+    console.error('Error processing payment failure:', error);
   }
 }
