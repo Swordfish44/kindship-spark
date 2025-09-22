@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Heart, Users, Clock } from "lucide-react";
 import ProgressBar from "./ProgressBar";
+import DonationModal from "./DonationModal";
+import { useState } from "react";
 
 interface CampaignCardProps {
   id: string;
@@ -16,9 +18,11 @@ interface CampaignCardProps {
   daysLeft: number;
   creatorName: string;
   isLiked?: boolean;
+  slug?: string;
 }
 
 const CampaignCard = ({
+  id,
   title,
   description,
   image,
@@ -28,8 +32,19 @@ const CampaignCard = ({
   backers,
   daysLeft,
   creatorName,
-  isLiked = false
+  isLiked = false,
+  slug
 }: CampaignCardProps) => {
+  const [showDonationModal, setShowDonationModal] = useState(false);
+  
+  const campaign = {
+    id,
+    title,
+    slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    organizer: {
+      full_name: creatorName
+    }
+  };
   return (
     <Card className="overflow-hidden shadow-card hover:shadow-card-hover transition-smooth group cursor-pointer">
       {/* Image */}
@@ -85,11 +100,17 @@ const CampaignCard = ({
             <span className="text-muted-foreground">by </span>
             <span className="font-medium text-foreground">{creatorName}</span>
           </div>
-          <Button size="sm" className="bg-primary hover:bg-primary/90">
+          <Button size="sm" className="bg-primary hover:bg-primary/90" onClick={() => setShowDonationModal(true)}>
             Back This
           </Button>
         </div>
       </div>
+
+      <DonationModal
+        isOpen={showDonationModal}
+        onClose={() => setShowDonationModal(false)}
+        campaign={campaign}
+      />
     </Card>
   );
 };
