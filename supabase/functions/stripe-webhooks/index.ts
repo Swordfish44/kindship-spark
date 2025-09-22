@@ -29,51 +29,99 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const webhookSecret = stripeWebhookSecret;
+  const supabase = createClient(supabaseUrl!, supabaseServiceRoleKey!);
+
   try {
-    const supabase = createClient(supabaseUrl!, supabaseServiceRoleKey!);
+    logEvent('info', 'webhook_processing_started');
     
-    // Get the Stripe signature from headers
+    // Get the raw body as text for signature verification
+    const body = await req.text();
     const signature = req.headers.get('stripe-signature');
+    
     if (!signature) {
+      logEvent('error', 'missing_stripe_signature');
       throw new Error('No Stripe signature found');
     }
-
-    // Get the raw body
-    const body = await req.text();
+    
+    if (!webhookSecret) {
+      logEvent('error', 'webhook_secret_not_configured');
+      throw new Error('Webhook secret not configured');
+    }
     
     // Verify the webhook signature
     const encoder = new TextEncoder();
-    const data = encoder.encode(body);
-    const hmac = await crypto.subtle.importKey(
+    const sigElements = signature.split(',');
+    
+    let timestamp: string | null = null;
+    let signatures: string[] = [];
+    
+    for (const element of sigElements) {
+      const [key, value] = element.split('=');
+      if (key === 't') {
+        timestamp = value;
+      } else if (key === 'v1') {
+        signatures.push(value);
+      }
+    }
+    
+    if (!timestamp || signatures.length === 0) {
+      logEvent('error', 'invalid_signature_format');
+      throw new Error('Invalid signature format');
+    }
+    
+    // Create the payload for verification
+    const payload = `${timestamp}.${body}`;
+    const expectedSignature = await crypto.subtle.importKey(
       'raw',
-      encoder.encode(stripeWebhookSecret),
+      encoder.encode(webhookSecret),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
       ['sign']
+    ).then(key => 
+      crypto.subtle.sign('HMAC', key, encoder.encode(payload))
+    ).then(signature => 
+      Array.from(new Uint8Array(signature))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
     );
     
-    const expectedSignature = await crypto.subtle.sign('HMAC', hmac, data);
-    const expectedSig = 'sha256=' + Array.from(new Uint8Array(expectedSignature))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-
-    // Parse signature header
-    const sigElements = signature.split(',');
-    const sigHash = sigElements.find(element => element.startsWith('v1='))?.split('=')[1];
+    // Verify at least one signature matches
+    const signatureValid = signatures.some(sig => sig === expectedSignature);
+    if (!signatureValid) {
+      logEvent('error', 'signature_verification_failed');
+      throw new Error('Invalid webhook signature');
+    }
     
-    if (!sigHash) {
-      throw new Error('Invalid signature format');
-    }
+    logEvent('info', 'webhook_signature_verified');
 
-    // Verify signature (simplified check - in production, use proper timing-safe comparison)
-    if (!expectedSig.includes(sigHash)) {
-      console.log('Webhook signature verification failed');
-      // In development, log but don't fail
-      // throw new Error('Invalid signature');
-    }
-
+    // Parse the event
     const event = JSON.parse(body);
-    console.log(`Processing webhook event: ${event.type}`);
+    logEvent('info', 'webhook_event_received', { eventType: event.type, eventId: event.id });
+    
+    // Check for idempotency - prevent duplicate processing
+    const { data: existingEvent } = await supabase
+      .from('webhook_events')
+      .select('id')
+      .eq('stripe_event_id', event.id)
+      .single();
+      
+    if (existingEvent) {
+      logEvent('info', 'webhook_event_already_processed', { eventId: event.id });
+      return new Response(JSON.stringify({ received: true, status: 'duplicate' }), { 
+        headers: corsHeaders 
+      });
+    }
+    
+    // Record this event for idempotency
+    await supabase
+      .from('webhook_events')
+      .insert({
+        stripe_event_id: event.id,
+        event_type: event.type,
+        processed_at: new Date().toISOString(),
+        data: event
+      });
 
     switch (event.type) {
       case 'checkout.session.completed':
@@ -101,18 +149,24 @@ serve(async (req) => {
         break;
         
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logEvent('warn', 'unhandled_event_type', { eventType: event.type, eventId: event.id });
+        break;
     }
 
-    return new Response(JSON.stringify({ received: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    logEvent('info', 'webhook_processing_completed', { eventType: event.type, eventId: event.id });
+    return new Response(JSON.stringify({ received: true }), { headers: corsHeaders });
 
   } catch (error) {
-    console.error('Webhook error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    logEvent('error', 'webhook_processing_failed', { 
+      error: error.message, 
+      stack: error.stack?.split('\n').slice(0, 3).join('\n') 
+    });
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      timestamp: new Date().toISOString() 
+    }), {
+      status: 500,
+      headers: corsHeaders,
     });
   }
 });
@@ -130,6 +184,7 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
     const message = session.metadata?.message;
 
     if (!campaignId) {
+      logEvent('error', 'checkout_missing_campaign_id', { sessionId: session.id });
       throw new Error('No campaign_id in session metadata');
     }
 
@@ -137,6 +192,13 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
     const totalAmount = session.amount_total / 100; // Convert from cents
     const platformFee = Math.round(totalAmount * 0.08 * 100) / 100; // 8% platform fee
     const netAmount = totalAmount - platformFee;
+
+    logEvent('info', 'donation_amounts_calculated', { 
+      sessionId: session.id, 
+      totalAmount, 
+      platformFee, 
+      netAmount 
+    });
 
     // Record the donation
     const { data: donation, error: donationError } = await supabase
@@ -158,8 +220,15 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
       .single();
 
     if (donationError) {
+      logEvent('error', 'donation_creation_failed', { 
+        error: donationError.message, 
+        campaignId, 
+        sessionId: session.id 
+      });
       throw donationError;
     }
+
+    logEvent('info', 'donation_created', { donationId: donation.id, campaignId });
 
     // Update campaign current_amount
     const { error: campaignError } = await supabase
@@ -169,7 +238,9 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
       });
 
     if (campaignError) {
-      console.error('Error updating campaign amount:', campaignError);
+      logEvent('error', 'campaign_amount_update_failed', { error: campaignError.message, campaignId });
+    } else {
+      logEvent('info', 'campaign_amount_updated', { campaignId, totalAmount });
     }
 
     // Update reward tier claimed count if applicable
@@ -180,7 +251,9 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
         });
 
       if (tierError) {
-        console.error('Error updating reward tier:', tierError);
+        logEvent('error', 'reward_tier_update_failed', { error: tierError.message, rewardTierId });
+      } else {
+        logEvent('info', 'reward_tier_updated', { rewardTierId });
       }
     }
 
@@ -197,13 +270,22 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
       });
 
     if (analyticsError) {
-      console.error('Error updating analytics:', analyticsError);
+      logEvent('error', 'analytics_update_failed', { error: analyticsError.message, campaignId });
+    } else {
+      logEvent('info', 'analytics_updated', { campaignId });
     }
 
-    console.log('Successfully processed donation:', donation.id);
+    logEvent('info', 'checkout_completed_successfully', { 
+      donationId: donation.id, 
+      campaignId, 
+      totalAmount 
+    });
 
   } catch (error) {
-    console.error('Error processing checkout completion:', error);
+    logEvent('error', 'checkout_completion_failed', { 
+      error: error.message, 
+      sessionId: session.id 
+    });
     throw error;
   }
 }
