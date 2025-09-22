@@ -604,6 +604,14 @@ export type Database = {
         Args: { title: string }
         Returns: string
       }
+      increment_campaign_amount: {
+        Args: { amount_param: number; campaign_id_param: string }
+        Returns: undefined
+      }
+      increment_reward_tier_claimed: {
+        Args: { tier_id_param: string }
+        Returns: undefined
+      }
     }
     Enums: {
       campaign_status: "draft" | "active" | "paused" | "completed" | "cancelled"
