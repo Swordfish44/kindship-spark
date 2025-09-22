@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Zap, Shield, TrendingUp } from "lucide-react";
+import { ArrowRight, Zap, BookOpen, Leaf, Heart, Palette, Users, Trophy, ChefHat } from "lucide-react";
 import Header from "@/components/Header";
 import CampaignCard from "@/components/CampaignCard";
 import heroImage from "@/assets/hero-crowdfunding.jpg";
@@ -49,11 +49,13 @@ const Index = () => {
 
   const categories = [
     { name: "Technology", count: 1250, icon: Zap },
-    { name: "Education", count: 890, icon: Shield },
-    { name: "Environment", count: 654, icon: TrendingUp },
-    { name: "Health", count: 432, icon: Shield },
-    { name: "Arts", count: 321, icon: TrendingUp },
-    { name: "Community", count: 234, icon: Zap }
+    { name: "Education", count: 890, icon: BookOpen },
+    { name: "Environment", count: 654, icon: Leaf },
+    { name: "Health", count: 432, icon: Heart },
+    { name: "Arts & Culture", count: 321, icon: Palette },
+    { name: "Community", count: 234, icon: Users },
+    { name: "Sports", count: 123, icon: Trophy },
+    { name: "Food & Dining", count: 89, icon: ChefHat }
   ];
 
   return (
