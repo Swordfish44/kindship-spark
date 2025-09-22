@@ -1,6 +1,33 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+
+// Validation schemas
+const StripeConnectRequestSchema = z.object({
+  action: z.enum(['create_account_link', 'create_payment_intent', 'check_onboarding_status']),
+});
+
+const PaymentIntentSchema = z.object({
+  campaign_id: z.string().uuid(),
+  amount: z.number().min(1),
+  donor_email: z.string().email(),
+  donor_name: z.string().optional(),
+  anonymous: z.boolean().default(false),
+  message: z.string().max(500).default(""),
+});
+
+// Structured logging utility
+function logEvent(level: 'info' | 'warn' | 'error', event: string, data?: any) {
+  const logData = {
+    timestamp: new Date().toISOString(),
+    level,
+    event,
+    function: 'stripe-connect',
+    ...data
+  };
+  console.log(JSON.stringify(logData));
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,8 +46,11 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl!, supabaseServiceRoleKey!);
     
+    logEvent('info', 'stripe_connect_request_started');
+    
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      logEvent('error', 'missing_auth_header');
       throw new Error('No authorization header');
     }
 
@@ -28,10 +58,23 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
+      logEvent('error', 'auth_failed', { error: authError?.message });
       throw new Error('Invalid auth token');
     }
 
-    const { action } = await req.json();
+    logEvent('info', 'user_authenticated', { userId: user.id });
+
+    const requestBody = await req.json();
+    const validationResult = StripeConnectRequestSchema.safeParse(requestBody);
+    
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+      logEvent('error', 'validation_failed', { errors });
+      throw new Error(`Validation failed: ${errors.join(', ')}`);
+    }
+
+    const { action } = validationResult.data;
+    logEvent('info', 'action_validated', { action });
 
     switch (action) {
       case 'create_account_link': {
@@ -100,7 +143,14 @@ serve(async (req) => {
       }
 
       case 'create_payment_intent': {
-        const { campaign_id, amount, donor_email, donor_name, anonymous, message } = await req.json();
+        const paymentValidation = PaymentIntentSchema.safeParse(requestBody);
+        if (!paymentValidation.success) {
+          const errors = paymentValidation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+          logEvent('error', 'payment_intent_validation_failed', { errors });
+          throw new Error(`Payment intent validation failed: ${errors.join(', ')}`);
+        }
+        
+        const { campaign_id, amount, donor_email, donor_name, anonymous, message } = paymentValidation.data;
 
         // Get campaign and organizer Stripe account
         const { data: campaign } = await supabase
@@ -210,8 +260,14 @@ serve(async (req) => {
         throw new Error('Invalid action');
     }
   } catch (error) {
-    console.error('Stripe Connect error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    logEvent('error', 'stripe_connect_failed', { 
+      error: error.message, 
+      stack: error.stack?.split('\n').slice(0, 3).join('\n') 
+    });
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      timestamp: new Date().toISOString() 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

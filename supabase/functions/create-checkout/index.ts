@@ -1,6 +1,32 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+
+// Validation schemas
+const CheckoutRequestSchema = z.object({
+  campaign_id: z.string().uuid("Invalid campaign ID format"),
+  amount: z.number().min(1, "Amount must be at least $1"),
+  reward_tier_id: z.string().uuid().optional(),
+  donor_name: z.string().optional(),
+  donor_email: z.string().email("Invalid email format"),
+  anonymous: z.boolean().default(false),
+  message: z.string().max(500, "Message cannot exceed 500 characters").default(""),
+  success_url: z.string().url().optional(),
+  cancel_url: z.string().url().optional(),
+});
+
+// Structured logging utility
+function logEvent(level: 'info' | 'warn' | 'error', event: string, data?: any) {
+  const logData = {
+    timestamp: new Date().toISOString(),
+    level,
+    event,
+    function: 'create-checkout',
+    ...data
+  };
+  console.log(JSON.stringify(logData));
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +45,8 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl!, supabaseServiceRoleKey!);
     
+    logEvent('info', 'checkout_request_started');
+    
     const authHeader = req.headers.get('Authorization');
     let userId = null;
     
@@ -27,9 +55,20 @@ serve(async (req) => {
         const token = authHeader.replace('Bearer ', '');
         const { data: { user } } = await supabase.auth.getUser(token);
         userId = user?.id || null;
+        logEvent('info', 'user_authenticated', { userId });
       } catch (error) {
-        console.log('Auth token invalid, proceeding as guest donation');
+        logEvent('warn', 'auth_token_invalid', { error: error.message });
       }
+    }
+
+    const requestBody = await req.json();
+    
+    // Validate input with Zod
+    const validationResult = CheckoutRequestSchema.safeParse(requestBody);
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+      logEvent('error', 'validation_failed', { errors });
+      throw new Error(`Validation failed: ${errors.join(', ')}`);
     }
 
     const { 
@@ -38,20 +77,13 @@ serve(async (req) => {
       reward_tier_id,
       donor_name,
       donor_email,
-      anonymous = false,
-      message = '',
+      anonymous,
+      message,
       success_url,
       cancel_url 
-    } = await req.json();
+    } = validationResult.data;
 
-    // Validate required fields
-    if (!campaign_id || !amount || amount < 1) {
-      throw new Error('Campaign ID and amount (minimum $1) are required');
-    }
-
-    if (!donor_email) {
-      throw new Error('Donor email is required');
-    }
+    logEvent('info', 'input_validated', { campaign_id, amount, has_reward_tier: !!reward_tier_id });
 
     // Get campaign and organizer info
     const { data: campaign, error: campaignError } = await supabase
@@ -68,16 +100,25 @@ serve(async (req) => {
       .single();
 
     if (campaignError || !campaign) {
+      logEvent('error', 'campaign_not_found', { campaign_id, error: campaignError?.message });
       throw new Error('Campaign not found');
     }
 
     if (campaign.status !== 'active') {
+      logEvent('error', 'campaign_not_active', { campaign_id, status: campaign.status });
       throw new Error('Campaign is not active');
     }
 
     if (!campaign.organizer.stripe_account_id || !campaign.organizer.stripe_onboarding_complete) {
+      logEvent('error', 'organizer_stripe_incomplete', { 
+        campaign_id, 
+        has_account_id: !!campaign.organizer.stripe_account_id,
+        onboarding_complete: campaign.organizer.stripe_onboarding_complete 
+      });
       throw new Error('Campaign organizer has not completed Stripe setup');
     }
+
+    logEvent('info', 'campaign_validated', { campaign_id, organizer_id: campaign.organizer_id });
 
     // Validate reward tier if provided
     let rewardTier = null;
@@ -90,20 +131,34 @@ serve(async (req) => {
         .single();
 
       if (tierError || !tier) {
+        logEvent('error', 'reward_tier_not_found', { reward_tier_id, error: tierError?.message });
         throw new Error('Invalid reward tier');
       }
 
       if (!tier.is_active) {
+        logEvent('error', 'reward_tier_inactive', { reward_tier_id });
         throw new Error('Reward tier is not available');
       }
 
       if (tier.quantity_limit && tier.quantity_claimed >= tier.quantity_limit) {
+        logEvent('error', 'reward_tier_sold_out', { 
+          reward_tier_id, 
+          quantity_limit: tier.quantity_limit,
+          quantity_claimed: tier.quantity_claimed 
+        });
         throw new Error('Reward tier is sold out');
       }
 
       if (amount < tier.minimum_amount) {
+        logEvent('error', 'amount_below_minimum', { 
+          reward_tier_id, 
+          amount, 
+          minimum_amount: tier.minimum_amount 
+        });
         throw new Error(`Minimum donation for this reward tier is $${tier.minimum_amount}`);
       }
+
+      logEvent('info', 'reward_tier_validated', { reward_tier_id, minimum_amount: tier.minimum_amount });
 
       rewardTier = tier;
     }
@@ -192,8 +247,19 @@ serve(async (req) => {
     const checkout = await checkoutResponse.json();
     
     if (!checkoutResponse.ok) {
+      logEvent('error', 'stripe_checkout_failed', { 
+        error: checkout.error?.message, 
+        stripe_code: checkout.error?.code,
+        campaign_id 
+      });
       throw new Error(`Stripe checkout creation failed: ${checkout.error?.message || 'Unknown error'}`);
     }
+
+    logEvent('info', 'checkout_session_created', { 
+      session_id: checkout.id, 
+      campaign_id, 
+      amount_cents: amountInCents 
+    });
 
     // Log the donation attempt for analytics
     try {
@@ -207,9 +273,9 @@ serve(async (req) => {
         }, {
           onConflict: 'campaign_id,recorded_date'
         });
-    } catch (error) {
-      console.error('Error logging analytics:', error);
-    }
+      } catch (error) {
+        logEvent('warn', 'analytics_logging_failed', { error: error.message, campaign_id });
+      }
 
     return new Response(JSON.stringify({ 
       checkout_url: checkout.url,
@@ -219,8 +285,14 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Checkout creation error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    logEvent('error', 'checkout_creation_failed', { 
+      error: error.message, 
+      stack: error.stack?.split('\n').slice(0, 3).join('\n') 
+    });
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      timestamp: new Date().toISOString() 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

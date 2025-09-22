@@ -2,6 +2,18 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Structured logging utility
+function logEvent(level: 'info' | 'warn' | 'error', event: string, data?: any) {
+  const logData = {
+    timestamp: new Date().toISOString(),
+    level,
+    event,
+    function: 'stripe-webhooks',
+    ...data
+  };
+  console.log(JSON.stringify(logData));
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
@@ -106,7 +118,7 @@ serve(async (req) => {
 });
 
 async function handleCheckoutCompleted(supabase: any, session: any) {
-  console.log('Processing checkout.session.completed:', session.id);
+  logEvent('info', 'processing_checkout_completed', { sessionId: session.id });
   
   try {
     // Get campaign info from metadata
