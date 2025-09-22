@@ -14,16 +14,273 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          created_at: string
+          current_amount: number | null
+          description: string
+          funding_goal: number | null
+          id: string
+          image_url: string | null
+          media_urls: string[] | null
+          organizer_id: string
+          slug: string | null
+          status: Database["public"]["Enums"]["campaign_status"] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_amount?: number | null
+          description: string
+          funding_goal?: number | null
+          id?: string
+          image_url?: string | null
+          media_urls?: string[] | null
+          organizer_id: string
+          slug?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_amount?: number | null
+          description?: string
+          funding_goal?: number | null
+          id?: string
+          image_url?: string | null
+          media_urls?: string[] | null
+          organizer_id?: string
+          slug?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          document_type?: Database["public"]["Enums"]["document_type"]
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donations: {
+        Row: {
+          amount: number
+          anonymous: boolean | null
+          campaign_id: string
+          created_at: string
+          donor_email: string | null
+          donor_id: string | null
+          donor_name: string | null
+          id: string
+          message: string | null
+          net_amount: number
+          platform_fee: number
+          stripe_charge_id: string | null
+          stripe_payment_intent_id: string | null
+        }
+        Insert: {
+          amount: number
+          anonymous?: boolean | null
+          campaign_id: string
+          created_at?: string
+          donor_email?: string | null
+          donor_id?: string | null
+          donor_name?: string | null
+          id?: string
+          message?: string | null
+          net_amount: number
+          platform_fee: number
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+        }
+        Update: {
+          amount?: number
+          anonymous?: boolean | null
+          campaign_id?: string
+          created_at?: string
+          donor_email?: string | null
+          donor_id?: string | null
+          donor_name?: string | null
+          id?: string
+          message?: string | null
+          net_amount?: number
+          platform_fee?: number
+          stripe_charge_id?: string | null
+          stripe_payment_intent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payouts: {
+        Row: {
+          amount: number
+          campaign_id: string | null
+          created_at: string
+          id: string
+          organizer_id: string
+          platform_fee: number
+          processed_at: string | null
+          status: Database["public"]["Enums"]["payout_status"] | null
+          stripe_transfer_id: string | null
+        }
+        Insert: {
+          amount: number
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          organizer_id: string
+          platform_fee: number
+          processed_at?: string | null
+          status?: Database["public"]["Enums"]["payout_status"] | null
+          stripe_transfer_id?: string | null
+        }
+        Update: {
+          amount?: number
+          campaign_id?: string | null
+          created_at?: string
+          id?: string
+          organizer_id?: string
+          platform_fee?: number
+          processed_at?: string | null
+          status?: Database["public"]["Enums"]["payout_status"] | null
+          stripe_transfer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payouts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          organization_name: string | null
+          phone: string | null
+          social_media_links: Json | null
+          stripe_account_id: string | null
+          stripe_onboarding_complete: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id: string
+          organization_name?: string | null
+          phone?: string | null
+          social_media_links?: Json | null
+          stripe_account_id?: string | null
+          stripe_onboarding_complete?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          organization_name?: string | null
+          phone?: string | null
+          social_media_links?: Json | null
+          stripe_account_id?: string | null
+          stripe_onboarding_complete?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_platform_fee: {
+        Args: { amount: number }
+        Returns: number
+      }
+      generate_campaign_slug: {
+        Args: { title: string }
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      campaign_status: "draft" | "active" | "paused" | "completed" | "cancelled"
+      document_type:
+        | "government_id_front"
+        | "government_id_back"
+        | "proof_of_address"
+        | "business_registration"
+        | "bank_statement"
+      payout_status: "pending" | "in_transit" | "paid" | "failed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +407,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      campaign_status: ["draft", "active", "paused", "completed", "cancelled"],
+      document_type: [
+        "government_id_front",
+        "government_id_back",
+        "proof_of_address",
+        "business_registration",
+        "bank_statement",
+      ],
+      payout_status: ["pending", "in_transit", "paid", "failed", "cancelled"],
+    },
   },
 } as const
