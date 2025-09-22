@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Zap, BookOpen, Leaf, Heart, Palette, Users, Trophy, ChefHat } from "lucide-react";
+import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import CampaignCard from "@/components/CampaignCard";
 import heroImage from "@/assets/hero-crowdfunding.jpg";
@@ -81,9 +82,11 @@ const Index = () => {
                 Start your campaign today or discover amazing projects to support.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold">
-                  Start Your Campaign
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold" asChild>
+                  <Link to="/create-campaign">
+                    Start Your Campaign
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
                   Explore Projects
@@ -193,9 +196,11 @@ const Index = () => {
               Join our community of innovators and turn your vision into reality. 
               Get the funding and support you need to make an impact.
             </p>
-            <Button size="lg" className="hero-gradient text-white font-semibold">
-              Start Your Campaign Today
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button size="lg" className="hero-gradient text-white font-semibold" asChild>
+              <Link to="/create-campaign">
+                Start Your Campaign Today
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </div>
         </div>
