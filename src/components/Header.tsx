@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Search, Heart, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
+  const navigate = useNavigate();
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -43,11 +45,11 @@ const Header = () => {
           <Button variant="ghost" size="icon" className="md:hidden">
             <Search className="h-4 w-4" />
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => navigate('/auth')}>
             <User className="h-4 w-4 mr-2" />
             Sign In
           </Button>
-          <Button className="hero-gradient text-white font-semibold">
+          <Button className="hero-gradient text-white font-semibold" onClick={() => navigate('/onboarding')}>
             Start Campaign
           </Button>
         </div>

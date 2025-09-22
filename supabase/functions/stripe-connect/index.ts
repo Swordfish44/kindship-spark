@@ -1,0 +1,219 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabase = createClient(supabaseUrl!, supabaseServiceRoleKey!);
+    
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      throw new Error('Invalid auth token');
+    }
+
+    const { action } = await req.json();
+
+    switch (action) {
+      case 'create_account_link': {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('stripe_account_id, email')
+          .eq('id', user.id)
+          .single();
+
+        let accountId = userProfile?.stripe_account_id;
+
+        // Create Stripe Express account if it doesn't exist
+        if (!accountId) {
+          const createAccountResponse = await fetch('https://api.stripe.com/v1/accounts', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${stripeSecretKey}`,
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+              type: 'express',
+              country: 'US',
+              email: userProfile?.email || user.email || '',
+            }),
+          });
+
+          const account = await createAccountResponse.json();
+          
+          if (!createAccountResponse.ok) {
+            throw new Error(`Stripe account creation failed: ${account.error?.message}`);
+          }
+
+          accountId = account.id;
+
+          // Save Stripe account ID to user profile
+          await supabase
+            .from('users')
+            .update({ stripe_account_id: accountId })
+            .eq('id', user.id);
+        }
+
+        // Create account link for onboarding
+        const accountLinkResponse = await fetch('https://api.stripe.com/v1/account_links', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${stripeSecretKey}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            account: accountId,
+            refresh_url: `${req.headers.get('origin')}/onboarding?refresh=true`,
+            return_url: `${req.headers.get('origin')}/dashboard`,
+            type: 'account_onboarding',
+          }),
+        });
+
+        const accountLink = await accountLinkResponse.json();
+        
+        if (!accountLinkResponse.ok) {
+          throw new Error(`Account link creation failed: ${accountLink.error?.message}`);
+        }
+
+        return new Response(JSON.stringify({ url: accountLink.url }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'create_payment_intent': {
+        const { campaign_id, amount, donor_email, donor_name, anonymous, message } = await req.json();
+
+        // Get campaign and organizer Stripe account
+        const { data: campaign } = await supabase
+          .from('campaigns')
+          .select(`
+            *,
+            organizer:users!organizer_id (
+              stripe_account_id,
+              stripe_onboarding_complete
+            )
+          `)
+          .eq('id', campaign_id)
+          .single();
+
+        if (!campaign?.organizer.stripe_account_id || !campaign?.organizer.stripe_onboarding_complete) {
+          throw new Error('Campaign organizer has not completed Stripe onboarding');
+        }
+
+        const platformFee = Math.round(amount * 0.08 * 100); // 8% platform fee in cents
+        const amountInCents = Math.round(amount * 100);
+
+        const paymentIntentResponse = await fetch('https://api.stripe.com/v1/payment_intents', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${stripeSecretKey}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            amount: amountInCents.toString(),
+            currency: 'usd',
+            application_fee_amount: platformFee.toString(),
+            transfer_data: JSON.stringify({
+              destination: campaign.organizer.stripe_account_id,
+            }),
+            metadata: JSON.stringify({
+              campaign_id,
+              donor_email: donor_email || '',
+              donor_name: donor_name || '',
+              anonymous: anonymous ? 'true' : 'false',
+              message: message || '',
+            }),
+          }),
+        });
+
+        const paymentIntent = await paymentIntentResponse.json();
+        
+        if (!paymentIntentResponse.ok) {
+          throw new Error(`Payment intent creation failed: ${paymentIntent.error?.message}`);
+        }
+
+        return new Response(JSON.stringify({ 
+          client_secret: paymentIntent.client_secret,
+          payment_intent_id: paymentIntent.id 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'check_onboarding_status': {
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('stripe_account_id')
+          .eq('id', user.id)
+          .single();
+
+        if (!userProfile?.stripe_account_id) {
+          return new Response(JSON.stringify({ 
+            onboarding_complete: false,
+            details_submitted: false 
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const accountResponse = await fetch(`https://api.stripe.com/v1/accounts/${userProfile.stripe_account_id}`, {
+          headers: {
+            'Authorization': `Bearer ${stripeSecretKey}`,
+          },
+        });
+
+        const account = await accountResponse.json();
+        
+        if (!accountResponse.ok) {
+          throw new Error(`Failed to fetch account: ${account.error?.message}`);
+        }
+
+        const onboardingComplete = account.details_submitted && account.charges_enabled;
+
+        // Update user profile if onboarding is complete
+        if (onboardingComplete) {
+          await supabase
+            .from('users')
+            .update({ stripe_onboarding_complete: true })
+            .eq('id', user.id);
+        }
+
+        return new Response(JSON.stringify({ 
+          onboarding_complete: onboardingComplete,
+          details_submitted: account.details_submitted,
+          charges_enabled: account.charges_enabled 
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      default:
+        throw new Error('Invalid action');
+    }
+  } catch (error) {
+    console.error('Stripe Connect error:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
