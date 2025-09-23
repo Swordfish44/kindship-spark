@@ -2,9 +2,7 @@ import React from 'react'
 import { useParams } from 'react-router-dom'
 import DonateWidget from '@/components/DonateWidget'
 
-function parseQuery(search: string): Record<string,string> {
-  return Object.fromEntries(new URLSearchParams(search)) as any
-}
+function parseQuery(search: string): Record<string,string> { return Object.fromEntries(new URLSearchParams(search)) as any }
 
 export default function Embed() {
   const { slug } = useParams()
