@@ -780,6 +780,45 @@ export type Database = {
       }
     }
     Functions: {
+      admin_ledger_by_campaign: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          campaign_id: string | null
+          donations_count: number | null
+          gross_cents: number | null
+          net_to_organizer_cents: number | null
+          platform_fee_cents: number | null
+          refund_cents: number | null
+          slug: string | null
+          stripe_fee_cents: number | null
+          title: string | null
+        }[]
+      }
+      admin_ledger_daily: {
+        Args: { p_end?: string; p_start?: string }
+        Returns: {
+          day: string | null
+          donations_count: number | null
+          gross_cents: number | null
+          net_to_organizer_cents: number | null
+          platform_fee_cents: number | null
+          refund_cents: number | null
+          stripe_fee_cents: number | null
+        }[]
+      }
+      admin_payouts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          organizer_id: string
+          status: string
+          stripe_account_id: string
+          stripe_payout_id: string
+        }[]
+      }
       calculate_platform_fee: {
         Args: { amount: number }
         Returns: number
@@ -814,6 +853,10 @@ export type Database = {
       increment_reward_tier_claimed: {
         Args: { tier_id_param: string }
         Returns: undefined
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       public_campaign_stats: {
         Args: { sl: string }
