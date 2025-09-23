@@ -57,11 +57,11 @@ export default function Campaign() {
       setCampaign(camp)
 
       // public aggregated stats via RPC
-      const { data: s } = await supabase.rpc('get_campaign_public_stats', { campaign_slug: slug })
+      const { data: s } = await supabase.rpc('public_campaign_stats', { sl: slug })
       if (s && s.length) {
         setStats({ 
           raised_cents: Number(s[0].raised_cents || 0),
-          backer_count: Number(s[0].backer_count || 0)
+          backer_count: 0 // Will need separate query for backer count
         })
       }
       setLoading(false)

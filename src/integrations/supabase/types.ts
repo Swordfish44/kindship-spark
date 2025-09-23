@@ -689,6 +689,17 @@ export type Database = {
         Args: { tier_id_param: string }
         Returns: undefined
       }
+      public_campaign_stats: {
+        Args: { sl: string }
+        Returns: {
+          campaign_id: string
+          currency: string
+          goal_cents: number
+          raised_cents: number
+          status: string
+          title: string
+        }[]
+      }
       refresh_mv_donations_30d: {
         Args: Record<PropertyKey, never>
         Returns: undefined
