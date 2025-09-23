@@ -53,6 +53,13 @@ export type Database = {
             foreignKeyName: "campaign_analytics_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
+            referencedRelation: "campaign_public_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "campaign_analytics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
@@ -121,6 +128,13 @@ export type Database = {
             foreignKeyName: "campaign_comments_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
+            referencedRelation: "campaign_public_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "campaign_comments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
@@ -176,6 +190,13 @@ export type Database = {
             foreignKeyName: "campaign_team_members_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
+            referencedRelation: "campaign_public_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "campaign_team_members_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
@@ -227,6 +248,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "campaign_updates_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_public_stats"
+            referencedColumns: ["campaign_id"]
+          },
           {
             foreignKeyName: "campaign_updates_campaign_id_fkey"
             columns: ["campaign_id"]
@@ -406,6 +434,13 @@ export type Database = {
             foreignKeyName: "donations_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
+            referencedRelation: "campaign_public_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "donations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
@@ -466,6 +501,13 @@ export type Database = {
           stripe_transfer_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payouts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_public_stats"
+            referencedColumns: ["campaign_id"]
+          },
           {
             foreignKeyName: "payouts_campaign_id_fkey"
             columns: ["campaign_id"]
@@ -571,6 +613,13 @@ export type Database = {
             foreignKeyName: "reward_tiers_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
+            referencedRelation: "campaign_public_stats"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "reward_tiers_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
@@ -644,6 +693,18 @@ export type Database = {
       }
     }
     Views: {
+      campaign_public_stats: {
+        Row: {
+          backer_count: number | null
+          campaign_id: string | null
+          funding_goal_cents: number | null
+          raised_cents: number | null
+          slug: string | null
+          status: Database["public"]["Enums"]["campaign_status"] | null
+          title: string | null
+        }
+        Relationships: []
+      }
       mv_donations_30d: {
         Row: {
           day: string | null
@@ -677,6 +738,17 @@ export type Database = {
       increment_reward_tier_claimed: {
         Args: { tier_id_param: string }
         Returns: undefined
+      }
+      public_campaign_stats: {
+        Args: { sl: string }
+        Returns: {
+          backer_count: number
+          campaign_id: string
+          funding_goal_cents: number
+          raised_cents: number
+          status: string
+          title: string
+        }[]
       }
       refresh_mv_donations_30d: {
         Args: Record<PropertyKey, never>
