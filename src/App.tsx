@@ -14,6 +14,7 @@ import Campaign from "./pages/Campaign";
 import ThankYou from "./pages/ThankYou";
 import AdminFinance from "./pages/AdminFinance";
 import Discover from "./pages/Discover";
+import Embed from "./pages/Embed";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/campaign/:slug" element={<CampaignDetail />} />
           <Route path="/campaigns/:slug" element={<Campaign />} />
           <Route path="/create-campaign" element={<CreateCampaign />} />
+          <Route path="/embed/:slug" element={<Embed />} />
           <Route path="/thank-you" element={<ThankYou />} />
           <Route path="/admin/finance" element={<AdminFinance />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
