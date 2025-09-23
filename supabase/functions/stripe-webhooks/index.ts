@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@2.0.0";
 
 // Structured logging utility
 function logEvent(level: 'info' | 'warn' | 'error', event: string, data?: any) {
@@ -23,6 +24,12 @@ const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
 const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+// Email configuration
+const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+const fromEmail = Deno.env.get('FROM_EMAIL') || 'receipts@your-domain.com';
+const siteName = Deno.env.get('SITE_NAME') || 'National Black Treasury';
+const siteUrl = Deno.env.get('SITE_URL') || 'https://your-site.com';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -146,6 +153,10 @@ serve(async (req) => {
         
       case 'payment_intent.payment_failed':
         await handlePaymentFailed(supabase, event.data.object);
+        break;
+        
+      case 'charge.refunded':
+        await handleChargeRefunded(supabase, event.data.object);
         break;
         
       default:
@@ -279,10 +290,22 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
       logEvent('info', 'analytics_updated', { campaignId });
     }
 
+    // Send email receipts
+    await sendDonationEmails(supabase, {
+      donationId: donation.id,
+      campaignId,
+      donorEmail,
+      donorName,
+      totalAmountCents,
+      paymentIntentId: session.payment_intent,
+      anonymous,
+      message
+    });
+
     logEvent('info', 'checkout_completed_successfully', { 
       donationId: donation.id, 
       campaignId, 
-      totalAmount 
+      totalAmountCents 
     });
 
   } catch (error) {
@@ -434,5 +457,291 @@ async function handlePaymentFailed(supabase: any, paymentIntent: any) {
     
   } catch (error) {
     console.error('Error processing payment failure:', error);
+  }
+}
+
+async function handleChargeRefunded(supabase: any, charge: any) {
+  logEvent('info', 'processing_charge_refunded', { chargeId: charge.id });
+  
+  try {
+    // Find the donation by charge ID
+    const { data: donation, error: donationError } = await supabase
+      .from('donations')
+      .select('id, amount_cents, refunded_cents, campaign_id')
+      .eq('stripe_charge_id', charge.id)
+      .single();
+
+    if (donationError || !donation) {
+      logEvent('error', 'donation_not_found_for_refund', { 
+        error: donationError?.message, 
+        chargeId: charge.id 
+      });
+      return;
+    }
+
+    // Calculate total refunded amount in cents
+    let totalRefundedCents = 0;
+    for (const refund of charge.refunds.data) {
+      totalRefundedCents += refund.amount; // Already in cents
+    }
+
+    // Update donation with refunded amount
+    const { error: updateError } = await supabase
+      .from('donations')
+      .update({
+        refunded_cents: totalRefundedCents
+      })
+      .eq('id', donation.id);
+
+    if (updateError) {
+      logEvent('error', 'refund_amount_update_failed', { 
+        error: updateError.message, 
+        donationId: donation.id 
+      });
+    } else {
+      logEvent('info', 'refund_amount_updated', { 
+        donationId: donation.id, 
+        totalRefundedCents,
+        chargeId: charge.id 
+      });
+    }
+
+    // Create refund records for tracking
+    for (const refund of charge.refunds.data) {
+      const { error: refundRecordError } = await supabase
+        .from('refunds')
+        .insert({
+          donation_id: donation.id,
+          amount: refund.amount / 100, // Convert to dollars for legacy field
+          reason: refund.reason || 'Refund processed',
+          status: refund.status || 'succeeded',
+          stripe_refund_id: refund.id,
+          processed_at: new Date(refund.created * 1000).toISOString()
+        });
+
+      if (refundRecordError) {
+        logEvent('error', 'refund_record_creation_failed', { 
+          error: refundRecordError.message, 
+          refundId: refund.id 
+        });
+      }
+    }
+
+  } catch (error) {
+    logEvent('error', 'charge_refund_processing_failed', { 
+      error: error.message, 
+      chargeId: charge.id 
+    });
+  }
+}
+
+async function sendDonationEmails(supabase: any, donationData: {
+  donationId: string;
+  campaignId: string;
+  donorEmail: string;
+  donorName: string;
+  totalAmountCents: number;
+  paymentIntentId: string;
+  anonymous: boolean;
+  message?: string;
+}) {
+  const { donationId, campaignId, donorEmail, donorName, totalAmountCents, paymentIntentId, anonymous, message } = donationData;
+  
+  try {
+    logEvent('info', 'email_sending_started', { donationId, paymentIntentId });
+
+    // Check if emails were already sent for this payment intent
+    const { data: existingLog } = await supabase
+      .from('receipt_logs')
+      .select('*')
+      .eq('donation_pi', paymentIntentId)
+      .single();
+
+    if (existingLog) {
+      logEvent('info', 'emails_already_sent', { 
+        donationId, 
+        paymentIntentId,
+        receiptSentAt: existingLog.receipt_sent_at,
+        organizerSentAt: existingLog.organizer_sent_at
+      });
+      return;
+    }
+
+    // Get campaign and organizer information
+    const { data: campaignData, error: campaignError } = await supabase
+      .from('campaigns')
+      .select(`
+        title,
+        organizer_id,
+        users!campaigns_organizer_id_fkey(email, full_name)
+      `)
+      .eq('id', campaignId)
+      .single();
+
+    if (campaignError || !campaignData) {
+      logEvent('error', 'campaign_data_fetch_failed', { error: campaignError?.message, campaignId });
+      return;
+    }
+
+    const organizerEmail = campaignData.users?.email;
+    const organizerName = campaignData.users?.full_name;
+    const campaignTitle = campaignData.title;
+
+    // Create initial log entry
+    const { data: logEntry, error: logError } = await supabase
+      .from('receipt_logs')
+      .insert({
+        donation_pi: paymentIntentId,
+        donor_email: donorEmail,
+        organizer_email: organizerEmail
+      })
+      .select()
+      .single();
+
+    if (logError) {
+      logEvent('error', 'receipt_log_creation_failed', { error: logError.message, paymentIntentId });
+      return;
+    }
+
+    const amountFormatted = `$${(totalAmountCents / 100).toFixed(2)}`;
+    let emailsSent = { receipt: false, organizer: false };
+
+    // Send receipt email to donor
+    if (donorEmail) {
+      try {
+        const receiptResponse = await resend.emails.send({
+          from: `${siteName} <${fromEmail}>`,
+          to: [donorEmail],
+          subject: `Thank you for your donation to ${campaignTitle}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h1 style="color: #333; text-align: center;">Thank you for your donation!</h1>
+              
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h2 style="color: #333; margin-top: 0;">Donation Receipt</h2>
+                <p><strong>Campaign:</strong> ${campaignTitle}</p>
+                <p><strong>Amount:</strong> ${amountFormatted}</p>
+                <p><strong>Donor:</strong> ${donorName}</p>
+                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                ${message ? `<p><strong>Message:</strong> ${message}</p>` : ''}
+              </div>
+              
+              <p>Your generous donation will help make a difference. You will receive updates on how your contribution is being used.</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${siteUrl}" style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">Visit ${siteName}</a>
+              </div>
+              
+              <p style="font-size: 12px; color: #666; text-align: center;">
+                This receipt serves as confirmation of your donation. Please keep this for your records.
+              </p>
+            </div>
+          `
+        });
+
+        if (receiptResponse.error) {
+          logEvent('error', 'receipt_email_failed', { 
+            error: receiptResponse.error.message, 
+            donorEmail, 
+            donationId 
+          });
+        } else {
+          emailsSent.receipt = true;
+          logEvent('info', 'receipt_email_sent', { donorEmail, donationId });
+        }
+      } catch (error) {
+        logEvent('error', 'receipt_email_exception', { 
+          error: error.message, 
+          donorEmail, 
+          donationId 
+        });
+      }
+    }
+
+    // Send notification email to organizer
+    if (organizerEmail) {
+      try {
+        const organizerResponse = await resend.emails.send({
+          from: `${siteName} <${fromEmail}>`,
+          to: [organizerEmail],
+          subject: `New donation received for ${campaignTitle}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h1 style="color: #333; text-align: center;">New Donation Received!</h1>
+              
+              <div style="background: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+                <h2 style="color: #333; margin-top: 0;">Donation Details</h2>
+                <p><strong>Campaign:</strong> ${campaignTitle}</p>
+                <p><strong>Amount:</strong> ${amountFormatted}</p>
+                <p><strong>Donor:</strong> ${anonymous ? 'Anonymous' : donorName}</p>
+                <p><strong>Email:</strong> ${anonymous ? 'Hidden' : donorEmail}</p>
+                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                ${message && !anonymous ? `<p><strong>Message:</strong> ${message}</p>` : ''}
+              </div>
+              
+              <p>Hello ${organizerName},</p>
+              
+              <p>Great news! Your campaign "${campaignTitle}" has received a new donation of ${amountFormatted}.</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${siteUrl}" style="background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">View Campaign Dashboard</a>
+              </div>
+              
+              <p style="font-size: 12px; color: #666;">
+                You're receiving this email because you're the organizer of this campaign. 
+                <br>Keep up the great work!
+              </p>
+            </div>
+          `
+        });
+
+        if (organizerResponse.error) {
+          logEvent('error', 'organizer_email_failed', { 
+            error: organizerResponse.error.message, 
+            organizerEmail, 
+            donationId 
+          });
+        } else {
+          emailsSent.organizer = true;
+          logEvent('info', 'organizer_email_sent', { organizerEmail, donationId });
+        }
+      } catch (error) {
+        logEvent('error', 'organizer_email_exception', { 
+          error: error.message, 
+          organizerEmail, 
+          donationId 
+        });
+      }
+    }
+
+    // Update log with send timestamps
+    const updateData: any = {};
+    if (emailsSent.receipt) {
+      updateData.receipt_sent_at = new Date().toISOString();
+    }
+    if (emailsSent.organizer) {
+      updateData.organizer_sent_at = new Date().toISOString();
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await supabase
+        .from('receipt_logs')
+        .update(updateData)
+        .eq('id', logEntry.id);
+    }
+
+    logEvent('info', 'email_sending_completed', { 
+      donationId, 
+      paymentIntentId,
+      receiptSent: emailsSent.receipt,
+      organizerSent: emailsSent.organizer
+    });
+
+  } catch (error) {
+    logEvent('error', 'email_sending_failed', { 
+      error: error.message, 
+      donationId, 
+      paymentIntentId 
+    });
   }
 }
