@@ -14,38 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
+      backer_insights: {
+        Row: {
+          avg_donation_cents: number | null
+          campaigns_supported: number | null
+          created_at: string
+          donation_frequency: string | null
+          email: string
+          engagement_score: number | null
+          first_donation_date: string | null
+          geographic_location: string | null
+          id: string
+          last_donation_date: string | null
+          preferred_categories: Json | null
+          total_donated_cents: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          avg_donation_cents?: number | null
+          campaigns_supported?: number | null
+          created_at?: string
+          donation_frequency?: string | null
+          email: string
+          engagement_score?: number | null
+          first_donation_date?: string | null
+          geographic_location?: string | null
+          id?: string
+          last_donation_date?: string | null
+          preferred_categories?: Json | null
+          total_donated_cents?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          avg_donation_cents?: number | null
+          campaigns_supported?: number | null
+          created_at?: string
+          donation_frequency?: string | null
+          email?: string
+          engagement_score?: number | null
+          first_donation_date?: string | null
+          geographic_location?: string | null
+          id?: string
+          last_donation_date?: string | null
+          preferred_categories?: Json | null
+          total_donated_cents?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       campaign_analytics: {
         Row: {
           avg_donation_amount: number | null
+          avg_session_duration: number | null
+          bounce_rate: number | null
           campaign_id: string
           conversion_rate: number | null
+          device_breakdown: Json | null
+          donations_count: number | null
+          geographic_data: Json | null
           id: string
           page_views: number | null
           recorded_date: string
           social_shares: number | null
           total_refunds: number | null
+          traffic_sources: Json | null
           unique_visitors: number | null
         }
         Insert: {
           avg_donation_amount?: number | null
+          avg_session_duration?: number | null
+          bounce_rate?: number | null
           campaign_id: string
           conversion_rate?: number | null
+          device_breakdown?: Json | null
+          donations_count?: number | null
+          geographic_data?: Json | null
           id?: string
           page_views?: number | null
           recorded_date?: string
           social_shares?: number | null
           total_refunds?: number | null
+          traffic_sources?: Json | null
           unique_visitors?: number | null
         }
         Update: {
           avg_donation_amount?: number | null
+          avg_session_duration?: number | null
+          bounce_rate?: number | null
           campaign_id?: string
           conversion_rate?: number | null
+          device_breakdown?: Json | null
+          donations_count?: number | null
+          geographic_data?: Json | null
           id?: string
           page_views?: number | null
           recorded_date?: string
           social_shares?: number | null
           total_refunds?: number | null
+          traffic_sources?: Json | null
           unique_visitors?: number | null
         }
         Relationships: [
@@ -189,6 +258,51 @@ export type Database = {
             referencedColumns: ["campaign_id"]
           },
         ]
+      }
+      campaign_performance_hourly: {
+        Row: {
+          campaign_id: string
+          conversion_rate: number | null
+          created_at: string
+          donations_amount_cents: number | null
+          donations_count: number | null
+          email_clicks: number | null
+          email_opens: number | null
+          id: string
+          page_views: number | null
+          recorded_at: string
+          social_shares: number | null
+          unique_visitors: number | null
+        }
+        Insert: {
+          campaign_id: string
+          conversion_rate?: number | null
+          created_at?: string
+          donations_amount_cents?: number | null
+          donations_count?: number | null
+          email_clicks?: number | null
+          email_opens?: number | null
+          id?: string
+          page_views?: number | null
+          recorded_at: string
+          social_shares?: number | null
+          unique_visitors?: number | null
+        }
+        Update: {
+          campaign_id?: string
+          conversion_rate?: number | null
+          created_at?: string
+          donations_amount_cents?: number | null
+          donations_count?: number | null
+          email_clicks?: number | null
+          email_opens?: number | null
+          id?: string
+          page_views?: number | null
+          recorded_at?: string
+          social_shares?: number | null
+          unique_visitors?: number | null
+        }
+        Relationships: []
       }
       campaign_subscribers: {
         Row: {
@@ -439,6 +553,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      donation_analytics: {
+        Row: {
+          anonymous_donations_count: number | null
+          avg_donation_cents: number | null
+          campaign_id: string
+          created_at: string
+          id: string
+          peak_donation_hour: number | null
+          recorded_date: string
+          refunds_amount_cents: number | null
+          refunds_count: number | null
+          repeat_donors_count: number | null
+          total_amount_cents: number | null
+          total_donations_count: number | null
+          unique_donors_count: number | null
+        }
+        Insert: {
+          anonymous_donations_count?: number | null
+          avg_donation_cents?: number | null
+          campaign_id: string
+          created_at?: string
+          id?: string
+          peak_donation_hour?: number | null
+          recorded_date?: string
+          refunds_amount_cents?: number | null
+          refunds_count?: number | null
+          repeat_donors_count?: number | null
+          total_amount_cents?: number | null
+          total_donations_count?: number | null
+          unique_donors_count?: number | null
+        }
+        Update: {
+          anonymous_donations_count?: number | null
+          avg_donation_cents?: number | null
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          peak_donation_hour?: number | null
+          recorded_date?: string
+          refunds_amount_cents?: number | null
+          refunds_count?: number | null
+          repeat_donors_count?: number | null
+          total_amount_cents?: number | null
+          total_donations_count?: number | null
+          unique_donors_count?: number | null
+        }
+        Relationships: []
       }
       donations: {
         Row: {
@@ -1235,6 +1397,10 @@ export type Database = {
           stripe_payout_id: string
         }[]
       }
+      calculate_campaign_analytics: {
+        Args: { p_campaign_id: string; p_date?: string }
+        Returns: undefined
+      }
       calculate_platform_fee: {
         Args: { amount: number }
         Returns: number
@@ -1246,6 +1412,21 @@ export type Database = {
       generate_campaign_slug: {
         Args: { title: string }
         Returns: string
+      }
+      get_campaign_performance_summary: {
+        Args: { p_campaign_id: string; p_days?: number }
+        Returns: {
+          avg_donation_cents: number
+          best_performing_day: string
+          conversion_rate: number
+          growth_rate: number
+          page_views: number
+          social_shares: number
+          total_donations: number
+          total_raised_cents: number
+          unique_donors: number
+          worst_performing_day: string
+        }[]
       }
       get_campaign_public_stats: {
         Args: { campaign_slug: string }
@@ -1345,6 +1526,10 @@ export type Database = {
           organizer_acct: string
           pi: string
         }[]
+      }
+      update_backer_insights: {
+        Args: { p_donor_email: string }
+        Returns: undefined
       }
     }
     Enums: {

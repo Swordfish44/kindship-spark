@@ -18,6 +18,7 @@ import ThankYou from "./pages/ThankYou";
 import Profile from "./pages/Profile";
 import EmailUnsubscribe from './pages/EmailUnsubscribe';
 import AdminFinance from "./pages/AdminFinance";
+import Analytics from "./pages/Analytics";
 import Discover from "./pages/Discover";
 import Embed from "./pages/Embed";
 
@@ -63,6 +64,11 @@ const App = () => (
             <Route path="/settings" element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute>
+                <Analytics />
               </ProtectedRoute>
             } />
             <Route path="/unsubscribe" element={<EmailUnsubscribe />} />

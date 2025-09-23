@@ -15,6 +15,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import QRCode from 'qrcode';
 
 interface SocialShareButtonProps {
@@ -24,6 +25,7 @@ interface SocialShareButtonProps {
   hashtags?: string[];
   variant?: 'default' | 'outline' | 'ghost';
   size?: 'default' | 'sm' | 'lg' | 'icon';
+  campaignId?: string;
 }
 
 const SocialShareButton = ({ 
@@ -32,9 +34,11 @@ const SocialShareButton = ({
   url,
   hashtags = [],
   variant = 'outline',
-  size = 'default'
+  size = 'default',
+  campaignId
 }: SocialShareButtonProps) => {
   const { toast } = useToast();
+  const { trackSocialShare } = useAnalytics();
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
 
@@ -80,7 +84,10 @@ const SocialShareButton = ({
     }
   };
 
-  const openShareWindow = (shareUrl: string) => {
+  const openShareWindow = (shareUrl: string, platform: string) => {
+    if (campaignId) {
+      trackSocialShare(campaignId, platform);
+    }
     window.open(
       shareUrl,
       'share-window',
@@ -129,22 +136,22 @@ const SocialShareButton = ({
             Copy Link
           </DropdownMenuItem>
           
-          <DropdownMenuItem onClick={() => openShareWindow(shareUrls.twitter)}>
+          <DropdownMenuItem onClick={() => openShareWindow(shareUrls.twitter, 'twitter')}>
             <Twitter className="h-4 w-4 mr-2" />
             Share on Twitter
           </DropdownMenuItem>
           
-          <DropdownMenuItem onClick={() => openShareWindow(shareUrls.facebook)}>
+          <DropdownMenuItem onClick={() => openShareWindow(shareUrls.facebook, 'facebook')}>
             <Facebook className="h-4 w-4 mr-2" />
             Share on Facebook
           </DropdownMenuItem>
           
-          <DropdownMenuItem onClick={() => openShareWindow(shareUrls.linkedin)}>
+          <DropdownMenuItem onClick={() => openShareWindow(shareUrls.linkedin, 'linkedin')}>
             <Linkedin className="h-4 w-4 mr-2" />
             Share on LinkedIn
           </DropdownMenuItem>
           
-          <DropdownMenuItem onClick={() => openShareWindow(shareUrls.whatsapp)}>
+          <DropdownMenuItem onClick={() => openShareWindow(shareUrls.whatsapp, 'whatsapp')}>
             <MessageCircle className="h-4 w-4 mr-2" />
             Share on WhatsApp
           </DropdownMenuItem>

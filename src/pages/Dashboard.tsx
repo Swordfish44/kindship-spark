@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Eye, Edit, DollarSign, Target, Users, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import AnalyticsOverview from "@/components/AnalyticsOverview";
 
 interface DashboardStats {
   totalRaised: number;
@@ -265,6 +266,7 @@ export default function Dashboard() {
           <TabsList>
             <TabsTrigger value="campaigns">My Campaigns</TabsTrigger>
             <TabsTrigger value="donations">Recent Donations</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="campaigns">
@@ -411,6 +413,10 @@ export default function Dashboard() {
                 )}
               </div>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <AnalyticsOverview />
           </TabsContent>
         </Tabs>
       </div>
