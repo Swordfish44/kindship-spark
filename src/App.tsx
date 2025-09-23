@@ -12,6 +12,7 @@ import CreateCampaign from "./pages/CreateCampaign";
 import Dashboard from "./pages/Dashboard";
 import Campaign from "./pages/Campaign";
 import ThankYou from "./pages/ThankYou";
+import AdminFinance from "./pages/AdminFinance";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/campaigns/:slug" element={<Campaign />} />
           <Route path="/create-campaign" element={<CreateCampaign />} />
           <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/admin/finance" element={<AdminFinance />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
