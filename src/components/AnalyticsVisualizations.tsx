@@ -80,7 +80,7 @@ export const RevenueAreaChart = ({ data, height = 300 }: ChartProps) => (
           borderRadius: '8px',
           fontSize: '12px'
         }}
-        formatter={(value) => [`$${value?.toFixed(2)}`, 'Revenue']}
+        formatter={(value) => [`$${typeof value === 'number' ? value.toFixed(2) : '0.00'}`, 'Revenue']}
       />
       <Area 
         type="monotone" 
