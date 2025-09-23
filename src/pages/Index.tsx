@@ -66,41 +66,41 @@ const Index = () => {
       <Header />
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 hero-gradient opacity-90" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-800">
+        <div className="absolute inset-0 bg-black/20" />
         <div className="relative container py-24 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-white">
-              <Badge className="mb-4 bg-white/20 text-white border-white/30 hover:bg-white/30">
+              <Badge className="mb-4 bg-white/20 text-white border-white/30 hover:bg-white/30 backdrop-blur-sm">
                 🚀 New: Launch Your Dream Project
               </Badge>
-              <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight text-red-500">
-                TESTING: Fund Your Vision,
+              <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight drop-shadow-lg">
+                Fund Your Vision,
                 <br />
-                <span className="text-yellow-400">Change the World</span>
+                <span className="text-yellow-300 drop-shadow-lg">Change the World</span>
               </h1>
-              <p className="text-lg lg:text-xl mb-8 text-white/90 leading-relaxed">
+              <p className="text-lg lg:text-xl mb-8 text-white/90 leading-relaxed drop-shadow">
                 Join thousands of creators and backers bringing innovative projects to life. 
                 Start your campaign today or discover amazing projects to support.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90 font-semibold" asChild>
+                <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 font-semibold shadow-xl transform hover:scale-105 transition-all duration-200" asChild>
                   <Link to="/create-campaign">
                     Start Your Campaign
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
+                <Button size="lg" variant="outline" className="text-white border-white/50 hover:bg-white/10 backdrop-blur-sm shadow-lg">
                   Explore Projects
                 </Button>
               </div>
             </div>
             <div className="relative">
-              <div className="absolute inset-0 shadow-glow rounded-2xl" />
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl blur-2xl opacity-30" />
               <img
                 src={heroImage}
                 alt="Crowdfunding Success Stories"
-                className="rounded-2xl shadow-2xl w-full h-auto"
+                className="relative rounded-2xl shadow-2xl w-full h-auto border-2 border-white/20"
               />
             </div>
           </div>
@@ -155,30 +155,30 @@ const Index = () => {
       </section>
 
       {/* Categories */}
-      <section className="py-16 bg-muted/30">
+      <section className="py-16 bg-gradient-to-r from-slate-50 to-blue-50">
         <div className="container">
           <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Browse by Category</h2>
-            <p className="text-muted-foreground text-lg">
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-800">Browse by Category</h2>
+            <p className="text-gray-600 text-lg">
               Find projects that match your interests
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {categories.map((category, index) => {
               const Icon = category.icon;
               return (
                 <div
                   key={index}
-                  className="p-6 bg-card rounded-xl shadow-card hover:shadow-card-hover transition-smooth cursor-pointer group"
+                  className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group transform hover:-translate-y-1 border border-gray-100"
                 >
                   <div className="text-center">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-6 w-6 text-primary" />
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-200">
+                      <Icon className="h-8 w-8 text-white" />
                     </div>
-                    <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors">
+                    <h3 className="font-bold mb-2 text-gray-800 group-hover:text-blue-600 transition-colors">
                       {category.name}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-gray-500 font-medium">
                       {category.count} projects
                     </p>
                   </div>
