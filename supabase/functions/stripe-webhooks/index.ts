@@ -376,24 +376,62 @@ async function handleChargeDispute(supabase: any, dispute: any) {
 }
 
 async function handleAccountUpdated(supabase: any, account: any) {
-  console.log('Processing account.updated:', account.id);
+  logEvent('info', 'processing_account_updated', { account_id: account.id });
   
   try {
-    // Update user's Stripe onboarding status
+    // Calculate onboarding completion status
     const onboardingComplete = account.details_submitted && account.charges_enabled;
     
+    // Calculate KYC status based on account requirements
+    const disabledReason = account.requirements?.disabled_reason;
+    const pastDue = (account.requirements?.past_due || []).length;
+    const currentlyDue = (account.requirements?.currently_due || []).length;
+    
+    let kycStatus = 'pending';
+    if (disabledReason) {
+      kycStatus = 'restricted';
+    } else if (pastDue > 0 || currentlyDue > 0) {
+      kycStatus = 'requirements_due';
+    } else if (account.details_submitted && account.charges_enabled) {
+      kycStatus = 'verified';
+    }
+
+    logEvent('info', 'account_status_calculated', {
+      account_id: account.id,
+      onboarding_complete: onboardingComplete,
+      kyc_status: kycStatus,
+      disabled_reason: disabledReason,
+      past_due_count: pastDue,
+      currently_due_count: currentlyDue
+    });
+
+    // Update user record with both onboarding status and KYC status
     const { error } = await supabase
       .from('users')
       .update({
-        stripe_onboarding_complete: onboardingComplete
+        stripe_onboarding_complete: onboardingComplete,
+        kyc_status: kycStatus
       })
       .eq('stripe_account_id', account.id);
 
     if (error) {
-      console.error('Error updating account status:', error);
+      logEvent('error', 'account_update_failed', {
+        account_id: account.id,
+        error: error.message
+      });
+    } else {
+      logEvent('info', 'account_update_successful', {
+        account_id: account.id,
+        kyc_status: kycStatus,
+        onboarding_complete: onboardingComplete
+      });
     }
-  } catch (error) {
-    console.error('Error processing account update:', error);
+  } catch (error: any) {
+    logEvent('error', 'account_update_error', {
+      account_id: account.id,
+      error: error.message,
+      stack: error.stack
+    });
   }
 }
 

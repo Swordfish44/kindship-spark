@@ -682,6 +682,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          kyc_status: string | null
           organization_name: string | null
           phone: string | null
           social_media_links: Json | null
@@ -694,6 +695,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          kyc_status?: string | null
           organization_name?: string | null
           phone?: string | null
           social_media_links?: Json | null
@@ -706,6 +708,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          kyc_status?: string | null
           organization_name?: string | null
           phone?: string | null
           social_media_links?: Json | null

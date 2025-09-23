@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
+import OrganizerPayoutSetup from "@/components/OrganizerPayoutSetup";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [stats, setStats] = useState<DashboardStats>({
     totalRaised: 0,
     totalDonations: 0,
@@ -75,6 +77,15 @@ export default function Dashboard() {
   const loadDashboardData = async (userId: string) => {
     try {
       setLoading(true);
+      
+      // Load user profile data including KYC status
+      const { data: profileData } = await supabase
+        .from("users")
+        .select("id, kyc_status, stripe_onboarding_complete, stripe_account_id")
+        .eq("id", userId)
+        .maybeSingle();
+      
+      setUserProfile(profileData);
       
       // Load user's campaigns
       const { data: campaignsData } = await supabase
@@ -238,6 +249,15 @@ export default function Dashboard() {
               </div>
             </div>
           </Card>
+        </div>
+
+        {/* Payout Setup Section */}
+        <div className="mb-8">
+          <OrganizerPayoutSetup
+            kycStatus={userProfile?.kyc_status}
+            onboardingCompleted={userProfile?.stripe_onboarding_complete}
+            onStatusUpdate={() => loadDashboardData(user.id)}
+          />
         </div>
 
         {/* Main Content Tabs */}
