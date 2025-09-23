@@ -892,18 +892,35 @@ export type Database = {
         }[]
       }
       public_discover_campaigns: {
-        Args: {
-          p_page?: number
-          p_search?: string
-          p_size?: number
-          p_sort?: string
-        }
+        Args:
+          | {
+              p_category_id?: string
+              p_funding_status?: string
+              p_max_goal_cents?: number
+              p_min_goal_cents?: number
+              p_page?: number
+              p_search?: string
+              p_size?: number
+              p_sort?: string
+            }
+          | {
+              p_page?: number
+              p_search?: string
+              p_size?: number
+              p_sort?: string
+            }
         Returns: {
+          backer_count: number
+          category_color: string
+          category_name: string
           created_at: string
           currency: string
+          days_remaining: number
           description: string
           funding_goal_cents: number
           image_url: string
+          organizer_name: string
+          progress_percentage: number
           raised_cents: number
           slug: string
           title: string
