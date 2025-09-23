@@ -350,6 +350,7 @@ export type Database = {
           anonymous: boolean | null
           campaign_id: string
           created_at: string
+          currency: string | null
           donor_email: string | null
           donor_id: string | null
           donor_name: string | null
@@ -357,8 +358,10 @@ export type Database = {
           message: string | null
           net_amount: number
           net_amount_cents: number | null
+          net_to_organizer_cents: number | null
           platform_fee: number
           platform_fee_cents: number | null
+          refunded_cents: number | null
           reward_tier_id: string | null
           stripe_charge_id: string | null
           stripe_payment_intent_id: string | null
@@ -369,6 +372,7 @@ export type Database = {
           anonymous?: boolean | null
           campaign_id: string
           created_at?: string
+          currency?: string | null
           donor_email?: string | null
           donor_id?: string | null
           donor_name?: string | null
@@ -376,8 +380,10 @@ export type Database = {
           message?: string | null
           net_amount: number
           net_amount_cents?: number | null
+          net_to_organizer_cents?: number | null
           platform_fee: number
           platform_fee_cents?: number | null
+          refunded_cents?: number | null
           reward_tier_id?: string | null
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -388,6 +394,7 @@ export type Database = {
           anonymous?: boolean | null
           campaign_id?: string
           created_at?: string
+          currency?: string | null
           donor_email?: string | null
           donor_id?: string | null
           donor_name?: string | null
@@ -395,8 +402,10 @@ export type Database = {
           message?: string | null
           net_amount?: number
           net_amount_cents?: number | null
+          net_to_organizer_cents?: number | null
           platform_fee?: number
           platform_fee_cents?: number | null
+          refunded_cents?: number | null
           reward_tier_id?: string | null
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -481,6 +490,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      receipt_logs: {
+        Row: {
+          created_at: string
+          donation_pi: string
+          donor_email: string | null
+          id: number
+          organizer_email: string | null
+          organizer_sent_at: string | null
+          receipt_sent_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          donation_pi: string
+          donor_email?: string | null
+          id?: number
+          organizer_email?: string | null
+          organizer_sent_at?: string | null
+          receipt_sent_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          donation_pi?: string
+          donor_email?: string | null
+          id?: number
+          organizer_email?: string | null
+          organizer_sent_at?: string | null
+          receipt_sent_at?: string | null
+        }
+        Relationships: []
       }
       refunds: {
         Row: {
