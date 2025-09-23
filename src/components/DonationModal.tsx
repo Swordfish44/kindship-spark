@@ -10,13 +10,15 @@ import { Badge } from '@/components/ui/badge';
 import { Heart, CreditCard, Lock, Gift } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { centsToDisplay, dollarsToCents, centsToNumber, parseInputToCents } from '@/lib/currency';
 import RewardTierCard from './RewardTierCard';
 
 interface RewardTier {
   id: string;
   title: string;
   description: string;
-  minimum_amount: number;
+  minimum_amount_cents: number;
+  minimum_amount: number; // Keep for backwards compatibility during transition
   estimated_delivery?: string;
   quantity_limit?: number;
   quantity_claimed: number;
@@ -39,7 +41,7 @@ interface DonationModalProps {
 }
 
 const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
-  const [amount, setAmount] = useState<number>(25);
+  const [amountCents, setAmountCents] = useState<number>(2500); // $25 in cents
   const [customAmount, setCustomAmount] = useState<string>('');
   const [donorName, setDonorName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
@@ -51,7 +53,7 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
 
-  const presetAmounts = [10, 25, 50, 100, 250, 500];
+  const presetAmountsCents = [1000, 2500, 5000, 10000, 25000, 50000]; // $10, $25, $50, $100, $250, $500
 
   useEffect(() => {
     if (isOpen) {
@@ -86,7 +88,7 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
         .select('*')
         .eq('campaign_id', campaign.id)
         .eq('is_active', true)
-        .order('minimum_amount', { ascending: true });
+        .order('minimum_amount_cents', { ascending: true });
 
       if (error) throw error;
       setRewardTiers(data || []);
@@ -95,15 +97,15 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
     }
   };
 
-  const handleAmountSelect = (value: number) => {
-    setAmount(value);
+  const handleAmountSelect = (valueCents: number) => {
+    setAmountCents(valueCents);
     setCustomAmount('');
     
     // Auto-select appropriate reward tier
     if (rewardTiers.length > 0) {
       const tier = rewardTiers
-        .filter(t => t.minimum_amount <= value)
-        .sort((a, b) => b.minimum_amount - a.minimum_amount)[0];
+        .filter(t => (t.minimum_amount_cents || dollarsToCents(t.minimum_amount || 0)) <= valueCents)
+        .sort((a, b) => (b.minimum_amount_cents || dollarsToCents(b.minimum_amount || 0)) - (a.minimum_amount_cents || dollarsToCents(a.minimum_amount || 0)))[0];
       
       setSelectedTier(tier || null);
     }
@@ -111,15 +113,16 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
 
   const handleCustomAmountChange = (value: string) => {
     setCustomAmount(value);
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue > 0) {
-      setAmount(numValue);
+    const amountCentsValue = parseInputToCents(value);
+    
+    if (amountCentsValue && amountCentsValue > 0) {
+      setAmountCents(amountCentsValue);
       
       // Auto-select appropriate reward tier
       if (rewardTiers.length > 0) {
         const tier = rewardTiers
-          .filter(t => t.minimum_amount <= numValue)
-          .sort((a, b) => b.minimum_amount - a.minimum_amount)[0];
+          .filter(t => (t.minimum_amount_cents || dollarsToCents(t.minimum_amount || 0)) <= amountCentsValue)
+          .sort((a, b) => (b.minimum_amount_cents || dollarsToCents(b.minimum_amount || 0)) - (a.minimum_amount_cents || dollarsToCents(a.minimum_amount || 0)))[0];
         
         setSelectedTier(tier || null);
       }
@@ -128,33 +131,37 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
 
   const handleTierSelect = (tier: RewardTier) => {
     setSelectedTier(tier);
-    if (amount < tier.minimum_amount) {
-      setAmount(tier.minimum_amount);
+    const tierMinimumCents = tier.minimum_amount_cents || dollarsToCents(tier.minimum_amount || 0);
+    if (amountCents < tierMinimumCents) {
+      setAmountCents(tierMinimumCents);
       setCustomAmount('');
     }
   };
 
-  const calculatePlatformFee = (amount: number) => {
-    return Math.round(amount * 0.08 * 100) / 100;
+  const calculatePlatformFee = (amountCents: number) => {
+    return Math.round(amountCents * 0.08);
   };
 
   const handleDonate = async () => {
-    if (!donorEmail || !amount || amount < 1) {
+    if (!donorEmail || !amountCents || amountCents < 100) { // Minimum $1.00
       toast({
         title: "Missing information",
-        description: "Please provide your email and a valid donation amount.",
+        description: "Please provide your email and a valid donation amount (minimum $1.00).",
         variant: "destructive",
       });
       return;
     }
 
-    if (selectedTier && amount < selectedTier.minimum_amount) {
-      toast({
-        title: "Amount too low",
-        description: `Minimum donation for this reward tier is $${selectedTier.minimum_amount}.`,
-        variant: "destructive",
-      });
-      return;
+    if (selectedTier) {
+      const tierMinimumCents = selectedTier.minimum_amount_cents || dollarsToCents(selectedTier.minimum_amount || 0);
+      if (amountCents < tierMinimumCents) {
+        toast({
+          title: "Amount too low",
+          description: `Minimum donation for this reward tier is ${centsToDisplay(tierMinimumCents)}.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setProcessing(true);
@@ -163,7 +170,7 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           campaign_id: campaign.id,
-          amount,
+          amount_cents: amountCents,
           reward_tier_id: selectedTier?.id || null,
           donor_name: donorName,
           donor_email: donorEmail,
@@ -192,8 +199,8 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
     }
   };
 
-  const platformFee = calculatePlatformFee(amount);
-  const organizerAmount = amount - platformFee;
+  const platformFeeCents = calculatePlatformFee(amountCents);
+  const organizerAmountCents = amountCents - platformFeeCents;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -210,14 +217,14 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
           <div>
             <Label className="text-base font-medium">Choose your donation amount</Label>
             <div className="grid grid-cols-3 gap-2 mt-3">
-              {presetAmounts.map((preset) => (
+              {presetAmountsCents.map((presetCents) => (
                 <Button
-                  key={preset}
-                  variant={amount === preset && !customAmount ? "default" : "outline"}
-                  onClick={() => handleAmountSelect(preset)}
+                  key={presetCents}
+                  variant={amountCents === presetCents && !customAmount ? "default" : "outline"}
+                  onClick={() => handleAmountSelect(presetCents)}
                   className="h-12"
                 >
-                  ${preset}
+                  {centsToDisplay(presetCents)}
                 </Button>
               ))}
             </div>
@@ -248,7 +255,7 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
                     tier={tier}
                     onSelect={handleTierSelect}
                     isSelected={selectedTier?.id === tier.id}
-                    disabled={amount < tier.minimum_amount}
+                    disabled={amountCents < (tier.minimum_amount_cents || dollarsToCents(tier.minimum_amount || 0))}
                   />
                 ))}
               </div>
@@ -316,16 +323,16 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Donation amount:</span>
-                <span>${amount.toFixed(2)}</span>
+                <span>{centsToDisplay(amountCents)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Platform fee (8%):</span>
-                <span>${platformFee.toFixed(2)}</span>
+                <span>{centsToDisplay(platformFeeCents)}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-medium">
                 <span>To {campaign.organizer.full_name}:</span>
-                <span>${organizerAmount.toFixed(2)}</span>
+                <span>{centsToDisplay(organizerAmountCents)}</span>
               </div>
             </div>
             
@@ -355,11 +362,11 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
             </Button>
             <Button 
               onClick={handleDonate} 
-              disabled={processing || !donorEmail || !amount}
+              disabled={processing || !donorEmail || !amountCents}
               className="flex-1"
             >
               <CreditCard className="h-4 w-4 mr-2" />
-              {processing ? 'Processing...' : `Donate $${amount.toFixed(2)}`}
+              {processing ? 'Processing...' : `Donate ${centsToDisplay(amountCents)}`}
             </Button>
           </div>
         </div>

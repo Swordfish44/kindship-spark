@@ -3,12 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Package, Users } from 'lucide-react';
+import { centsToDisplay, dollarsToCents } from '@/lib/currency';
 
 interface RewardTier {
   id: string;
   title: string;
   description: string;
-  minimum_amount: number;
+  minimum_amount_cents?: number;
+  minimum_amount: number; // Keep for backwards compatibility
   estimated_delivery?: string;
   quantity_limit?: number;
   quantity_claimed: number;
@@ -30,6 +32,8 @@ const RewardTierCard = ({ tier, onSelect, isSelected = false, disabled = false }
     ? `${tier.quantity_limit - tier.quantity_claimed} of ${tier.quantity_limit} left`
     : 'Unlimited availability';
 
+  const minimumAmountCents = tier.minimum_amount_cents || dollarsToCents(tier.minimum_amount || 0);
+
   return (
     <Card className={`p-6 cursor-pointer transition-all ${
       isSelected ? 'ring-2 ring-primary shadow-lg' : 'hover:shadow-md'
@@ -40,7 +44,7 @@ const RewardTierCard = ({ tier, onSelect, isSelected = false, disabled = false }
           <div>
             <h3 className="font-semibold text-lg">{tier.title}</h3>
             <p className="text-2xl font-bold text-primary">
-              ${tier.minimum_amount.toLocaleString()}
+              {centsToDisplay(minimumAmountCents)}
               <span className="text-sm text-muted-foreground font-normal"> or more</span>
             </p>
           </div>
@@ -84,7 +88,7 @@ const RewardTierCard = ({ tier, onSelect, isSelected = false, disabled = false }
           onClick={() => onSelect(tier)}
           disabled={!isAvailable || disabled}
         >
-          {isSelected ? 'Selected' : `Select $${tier.minimum_amount}+`}
+          {isSelected ? 'Selected' : `Select ${centsToDisplay(minimumAmountCents)}+`}
         </Button>
       </div>
     </Card>

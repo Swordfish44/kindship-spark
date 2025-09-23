@@ -1,6 +1,8 @@
+import { centsToDisplay } from "@/lib/currency";
+
 interface ProgressBarProps {
-  current: number;
-  target: number;
+  current: number; // Amount in cents
+  target: number;  // Amount in cents
   className?: string;
 }
 
@@ -10,7 +12,7 @@ const ProgressBar = ({ current, target, className = "" }: ProgressBarProps) => {
   return (
     <div className={`w-full ${className}`}>
       <div className="flex justify-between text-sm text-muted-foreground mb-2">
-        <span>${current.toLocaleString()} raised</span>
+        <span>{centsToDisplay(current)} raised</span>
         <span>{percentage.toFixed(0)}%</span>
       </div>
       <div className="h-3 bg-muted rounded-full overflow-hidden">
@@ -20,7 +22,7 @@ const ProgressBar = ({ current, target, className = "" }: ProgressBarProps) => {
         />
       </div>
       <div className="text-sm text-muted-foreground mt-1">
-        Goal: ${target.toLocaleString()}
+        Goal: {centsToDisplay(target)}
       </div>
     </div>
   );

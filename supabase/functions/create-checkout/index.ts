@@ -6,7 +6,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 // Validation schemas
 const CheckoutRequestSchema = z.object({
   campaign_id: z.string().uuid("Invalid campaign ID format"),
-  amount: z.number().min(1, "Amount must be at least $1"),
+  amount_cents: z.number().int().min(100, "Amount must be at least $1.00 (100 cents)"),
   reward_tier_id: z.string().uuid().optional(),
   donor_name: z.string().optional(),
   donor_email: z.string().email("Invalid email format"),
@@ -73,7 +73,7 @@ serve(async (req) => {
 
     const { 
       campaign_id, 
-      amount, 
+      amount_cents, 
       reward_tier_id,
       donor_name,
       donor_email,
@@ -149,23 +149,22 @@ serve(async (req) => {
         throw new Error('Reward tier is sold out');
       }
 
-      if (amount < tier.minimum_amount) {
+      if (amount_cents < tier.minimum_amount_cents) {
         logEvent('error', 'amount_below_minimum', { 
           reward_tier_id, 
-          amount, 
-          minimum_amount: tier.minimum_amount 
+          amount_cents, 
+          minimum_amount_cents: tier.minimum_amount_cents 
         });
-        throw new Error(`Minimum donation for this reward tier is $${tier.minimum_amount}`);
+        throw new Error(`Minimum donation for this reward tier is $${(tier.minimum_amount_cents / 100).toFixed(2)}`);
       }
 
-      logEvent('info', 'reward_tier_validated', { reward_tier_id, minimum_amount: tier.minimum_amount });
+      logEvent('info', 'reward_tier_validated', { reward_tier_id, minimum_amount_cents: tier.minimum_amount_cents });
 
       rewardTier = tier;
     }
 
-    // Calculate platform fee (8%)
-    const amountInCents = Math.round(amount * 100);
-    const platformFeeInCents = Math.round(amountInCents * 0.08);
+    // Calculate platform fee (8%) - amounts already in cents
+    const platformFeeInCents = Math.round(amount_cents * 0.08);
 
     // Create Stripe Checkout Session
     const checkoutData = {
@@ -184,7 +183,7 @@ serve(async (req) => {
                 : `Support ${campaign.organizer.full_name}'s campaign`,
               images: campaign.image_url ? [campaign.image_url] : [],
             },
-            unit_amount: amountInCents,
+            unit_amount: amount_cents,
           },
           quantity: 1,
         },

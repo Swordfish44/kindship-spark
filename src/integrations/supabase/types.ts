@@ -241,8 +241,10 @@ export type Database = {
           category_id: string | null
           created_at: string
           current_amount: number | null
+          current_amount_cents: number | null
           description: string
           funding_goal: number | null
+          funding_goal_cents: number | null
           id: string
           image_url: string | null
           media_urls: string[] | null
@@ -256,8 +258,10 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           current_amount?: number | null
+          current_amount_cents?: number | null
           description: string
           funding_goal?: number | null
+          funding_goal_cents?: number | null
           id?: string
           image_url?: string | null
           media_urls?: string[] | null
@@ -271,8 +275,10 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           current_amount?: number | null
+          current_amount_cents?: number | null
           description?: string
           funding_goal?: number | null
+          funding_goal_cents?: number | null
           id?: string
           image_url?: string | null
           media_urls?: string[] | null
@@ -340,6 +346,7 @@ export type Database = {
       donations: {
         Row: {
           amount: number
+          amount_cents: number | null
           anonymous: boolean | null
           campaign_id: string
           created_at: string
@@ -349,13 +356,16 @@ export type Database = {
           id: string
           message: string | null
           net_amount: number
+          net_amount_cents: number | null
           platform_fee: number
+          platform_fee_cents: number | null
           reward_tier_id: string | null
           stripe_charge_id: string | null
           stripe_payment_intent_id: string | null
         }
         Insert: {
           amount: number
+          amount_cents?: number | null
           anonymous?: boolean | null
           campaign_id: string
           created_at?: string
@@ -365,13 +375,16 @@ export type Database = {
           id?: string
           message?: string | null
           net_amount: number
+          net_amount_cents?: number | null
           platform_fee: number
+          platform_fee_cents?: number | null
           reward_tier_id?: string | null
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
         }
         Update: {
           amount?: number
+          amount_cents?: number | null
           anonymous?: boolean | null
           campaign_id?: string
           created_at?: string
@@ -381,7 +394,9 @@ export type Database = {
           id?: string
           message?: string | null
           net_amount?: number
+          net_amount_cents?: number | null
           platform_fee?: number
+          platform_fee_cents?: number | null
           reward_tier_id?: string | null
           stripe_charge_id?: string | null
           stripe_payment_intent_id?: string | null
@@ -413,33 +428,39 @@ export type Database = {
       payouts: {
         Row: {
           amount: number
+          amount_cents: number | null
           campaign_id: string | null
           created_at: string
           id: string
           organizer_id: string
           platform_fee: number
+          platform_fee_cents: number | null
           processed_at: string | null
           status: Database["public"]["Enums"]["payout_status"] | null
           stripe_transfer_id: string | null
         }
         Insert: {
           amount: number
+          amount_cents?: number | null
           campaign_id?: string | null
           created_at?: string
           id?: string
           organizer_id: string
           platform_fee: number
+          platform_fee_cents?: number | null
           processed_at?: string | null
           status?: Database["public"]["Enums"]["payout_status"] | null
           stripe_transfer_id?: string | null
         }
         Update: {
           amount?: number
+          amount_cents?: number | null
           campaign_id?: string | null
           created_at?: string
           id?: string
           organizer_id?: string
           platform_fee?: number
+          platform_fee_cents?: number | null
           processed_at?: string | null
           status?: Database["public"]["Enums"]["payout_status"] | null
           stripe_transfer_id?: string | null
@@ -511,6 +532,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           minimum_amount: number
+          minimum_amount_cents: number | null
           quantity_claimed: number | null
           quantity_limit: number | null
           title: string
@@ -524,6 +546,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           minimum_amount: number
+          minimum_amount_cents?: number | null
           quantity_claimed?: number | null
           quantity_limit?: number | null
           title: string
@@ -537,6 +560,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           minimum_amount?: number
+          minimum_amount_cents?: number | null
           quantity_claimed?: number | null
           quantity_limit?: number | null
           title?: string
@@ -634,12 +658,20 @@ export type Database = {
         Args: { amount: number }
         Returns: number
       }
+      calculate_platform_fee_cents: {
+        Args: { amount_cents: number }
+        Returns: number
+      }
       generate_campaign_slug: {
         Args: { title: string }
         Returns: string
       }
       increment_campaign_amount: {
         Args: { amount_param: number; campaign_id_param: string }
+        Returns: undefined
+      }
+      increment_campaign_amount_cents: {
+        Args: { amount_cents_param: number; campaign_id_param: string }
         Returns: undefined
       }
       increment_reward_tier_claimed: {

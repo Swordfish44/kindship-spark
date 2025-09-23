@@ -188,16 +188,16 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
       throw new Error('No campaign_id in session metadata');
     }
 
-    // Calculate amounts
-    const totalAmount = session.amount_total / 100; // Convert from cents
-    const platformFee = Math.round(totalAmount * 0.08 * 100) / 100; // 8% platform fee
-    const netAmount = totalAmount - platformFee;
+    // Calculate amounts in cents (no conversion needed)
+    const totalAmountCents = session.amount_total; // Already in cents
+    const platformFeeCents = Math.round(totalAmountCents * 0.08); // 8% platform fee
+    const netAmountCents = totalAmountCents - platformFeeCents;
 
     logEvent('info', 'donation_amounts_calculated', { 
       sessionId: session.id, 
-      totalAmount, 
-      platformFee, 
-      netAmount 
+      totalAmountCents, 
+      platformFeeCents, 
+      netAmountCents 
     });
 
     // Record the donation
@@ -205,9 +205,13 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
       .from('donations')
       .insert({
         campaign_id: campaignId,
-        amount: totalAmount,
-        platform_fee: platformFee,
-        net_amount: netAmount,
+        amount_cents: totalAmountCents,
+        platform_fee_cents: platformFeeCents,
+        net_amount_cents: netAmountCents,
+        // Keep legacy columns for compatibility during transition
+        amount: totalAmountCents / 100,
+        platform_fee: platformFeeCents / 100,
+        net_amount: netAmountCents / 100,
         stripe_payment_intent_id: session.payment_intent,
         stripe_charge_id: session.payment_intent, // Will be updated when we get the actual charge
         donor_email: donorEmail,
@@ -232,15 +236,15 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
 
     // Update campaign current_amount
     const { error: campaignError } = await supabase
-      .rpc('increment_campaign_amount', {
+      .rpc('increment_campaign_amount_cents', {
         campaign_id_param: campaignId,
-        amount_param: totalAmount
+        amount_cents_param: totalAmountCents
       });
 
     if (campaignError) {
       logEvent('error', 'campaign_amount_update_failed', { error: campaignError.message, campaignId });
     } else {
-      logEvent('info', 'campaign_amount_updated', { campaignId, totalAmount });
+      logEvent('info', 'campaign_amount_updated', { campaignId, totalAmountCents });
     }
 
     // Update reward tier claimed count if applicable
@@ -264,7 +268,7 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
       .upsert({
         campaign_id: campaignId,
         recorded_date: today,
-        avg_donation_amount: totalAmount,
+        avg_donation_amount: totalAmountCents / 100, // Keep as decimal for analytics
       }, {
         onConflict: 'campaign_id,recorded_date'
       });
