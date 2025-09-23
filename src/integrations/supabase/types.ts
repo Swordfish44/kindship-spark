@@ -692,6 +692,7 @@ export type Database = {
       public_campaign_stats: {
         Args: { sl: string }
         Returns: {
+          backer_count: number
           campaign_id: string
           currency: string
           goal_cents: number

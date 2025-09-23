@@ -61,7 +61,7 @@ export default function Campaign() {
       if (s && s.length) {
         setStats({ 
           raised_cents: Number(s[0].raised_cents || 0),
-          backer_count: 0 // Will need separate query for backer count
+          backer_count: Number(s[0].backer_count || 0)
         })
       }
       setLoading(false)
