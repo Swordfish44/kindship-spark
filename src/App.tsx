@@ -9,12 +9,14 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
+import Settings from "./pages/Settings";
 import CampaignDetail from "./pages/CampaignDetail";
 import CreateCampaign from "./pages/CreateCampaign";
 import Dashboard from "./pages/Dashboard";
 import Campaign from "./pages/Campaign";
 import ThankYou from "./pages/ThankYou";
 import Profile from "./pages/Profile";
+import EmailUnsubscribe from './pages/EmailUnsubscribe';
 import AdminFinance from "./pages/AdminFinance";
 import Discover from "./pages/Discover";
 import Embed from "./pages/Embed";
@@ -58,6 +60,12 @@ const App = () => (
             <Route path="/campaign/:slug" element={<CampaignDetail />} />
             <Route path="/campaigns/:slug" element={<Campaign />} />
             <Route path="/profile/:userId" element={<Profile />} />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="/unsubscribe" element={<EmailUnsubscribe />} />
             <Route path="/embed/:slug" element={<Embed />} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
