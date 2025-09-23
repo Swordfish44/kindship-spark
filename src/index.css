@@ -2,26 +2,174 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; }
+/* Crowdfunding Platform Design System */
 
-/***** Prose tweaks *****/
-.prose p { @apply text-gray-700 leading-7; }
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
 
-/***** Utility helpers *****/
-.card { @apply rounded-2xl bg-white shadow-card border border-border; }
-.btn { @apply inline-flex items-center justify-center rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }
-.btn-primary { @apply bg-primary text-white hover:bg-gray-900; }
-.btn-outline { @apply border border-border hover:bg-muted; }
-.input { @apply w-full rounded-xl border border-input bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring; }
-.select { @apply rounded-xl border border-input bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring; }
-.badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
-.badge-muted { @apply bg-muted text-muted-foreground; }
-.badge-success { @apply bg-green-100 text-green-800; }
-.badge-warning { @apply bg-yellow-100 text-yellow-800; }
-.badge-danger { @apply bg-red-100 text-red-800; }
-.progress { @apply w-full h-2 bg-muted rounded-full overflow-hidden; }
-.progress-bar { @apply h-full bg-success; }
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
 
-/***** Page shells *****/
-.page { @apply min-h-screen bg-gray-50 text-foreground; }
-.container-nbt { @apply container mx-auto px-4; }
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 222 47% 11%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 217 100% 70%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --accent-glow: 142 76% 46%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(221 83% 53%), hsl(142 76% 36%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(210 40% 98%));
+    --gradient-progress: linear-gradient(90deg, hsl(221 83% 53%), hsl(142 76% 36%));
+    
+    /* Shadows */
+    --shadow-card: 0 4px 6px -1px hsl(215 16% 47% / 0.1), 0 2px 4px -1px hsl(215 16% 47% / 0.06);
+    --shadow-card-hover: 0 10px 15px -3px hsl(215 16% 47% / 0.1), 0 4px 6px -2px hsl(215 16% 47% / 0.05);
+    --shadow-glow: 0 0 40px hsl(221 83% 53% / 0.3);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 0 0% 100%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 222 47% 11%;
+    --primary-glow: 217 100% 70%;
+
+    --secondary: 215 16% 20%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 215 16% 20%;
+    --muted-foreground: 215 16% 65%;
+
+    --accent: 215 16% 20%;
+    --accent-foreground: 0 0% 100%;
+    --accent-glow: 142 76% 46%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 222 47% 11%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 16% 20%;
+    --input: 215 16% 20%;
+    --ring: 221 83% 53%;
+
+    /* Gradients for dark mode */
+    --gradient-hero: linear-gradient(135deg, hsl(221 83% 53%), hsl(142 76% 36%));
+    --gradient-card: linear-gradient(180deg, hsl(222 47% 11%), hsl(222 47% 9%));
+    --gradient-progress: linear-gradient(90deg, hsl(221 83% 53%), hsl(142 76% 36%));
+    
+    /* Shadows for dark mode */
+    --shadow-card: 0 4px 6px -1px hsl(0 0% 0% / 0.2), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+    --shadow-card-hover: 0 10px 15px -3px hsl(0 0% 0% / 0.2), 0 4px 6px -2px hsl(0 0% 0% / 0.1);
+    --shadow-glow: 0 0 40px hsl(221 83% 53% / 0.4);
+
+    --sidebar-background: 240 15% 9%;
+    --sidebar-foreground: 250 100% 99%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 240 15% 9%;
+    --sidebar-accent: 240 8% 20%;
+    --sidebar-accent-foreground: 250 100% 99%;
+    --sidebar-border: 240 8% 20%;
+    --sidebar-ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+  
+  .card-gradient {
+    background: var(--gradient-card);
+  }
+  
+  .progress-gradient {
+    background: var(--gradient-progress);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-card-hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+  
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+  
+  /* Page layout utilities */
+  .page { 
+    @apply min-h-screen bg-gray-50 text-foreground; 
+  }
+  
+  .container-nbt { 
+    @apply container mx-auto px-4; 
+  }
+}
