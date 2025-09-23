@@ -90,7 +90,7 @@ const Index = () => {
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" className="text-white border-white/50 hover:bg-white/10 backdrop-blur-sm shadow-lg">
+                <Button size="lg" variant="outline" className="text-blue-600 border-white/50 bg-white/90 hover:bg-white hover:text-blue-700 backdrop-blur-sm shadow-lg font-semibold">
                   Explore Projects
                 </Button>
               </div>
