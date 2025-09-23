@@ -14,6 +14,7 @@ import CreateCampaign from "./pages/CreateCampaign";
 import Dashboard from "./pages/Dashboard";
 import Campaign from "./pages/Campaign";
 import ThankYou from "./pages/ThankYou";
+import Profile from "./pages/Profile";
 import AdminFinance from "./pages/AdminFinance";
 import Discover from "./pages/Discover";
 import Embed from "./pages/Embed";
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/discover" element={<Discover />} />
             <Route path="/campaign/:slug" element={<CampaignDetail />} />
             <Route path="/campaigns/:slug" element={<Campaign />} />
+            <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/embed/:slug" element={<Embed />} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
