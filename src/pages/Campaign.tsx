@@ -18,18 +18,11 @@ export default function Campaign() {
     if (!slug) return
     ;(async () => {
       setLoading(true)
-      const { data: camp, error } = await supabase
+      const { data: camp } = await supabase
         .from('campaigns')
         .select('id, title, description, image_url, funding_goal_cents, status, slug')
         .eq('slug', slug)
         .maybeSingle()
-      
-      if (error) {
-        console.error('Error fetching campaign:', error)
-        setLoading(false)
-        return
-      }
-      
       setCampaign(camp)
       const { data: s } = await supabase.rpc('public_campaign_stats', { sl: slug })
       if (s && s.length) setStats({ raised_cents: Number(s[0].raised_cents || 0) })
@@ -45,13 +38,7 @@ export default function Campaign() {
   }, [campaign, stats])
 
   if (loading) return <main className="page"><div className="container-nbt py-10">Loading…</div></main>
-  if (!campaign) {
-    return <main className="page"><div className="container-nbt py-10"><h1>Campaign not found</h1><p>The campaign you're looking for doesn't exist.</p></div></main>
-  }
-  
-  if (campaign.status !== 'active') {
-    return <main className="page"><div className="container-nbt py-10"><h1>Campaign not available</h1><p>This campaign is not currently active.</p></div></main>
-  }
+  if (!campaign || campaign.status !== 'active') return <main className="page"><div className="container-nbt py-10"><h1>Campaign not available</h1></div></main>
 
   return (
     <main className="page">
