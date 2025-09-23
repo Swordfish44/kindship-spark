@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Campaign from "./pages/Campaign";
 import ThankYou from "./pages/ThankYou";
 import AdminFinance from "./pages/AdminFinance";
+import Discover from "./pages/Discover";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/discover" element={<Discover />} />
           <Route path="/campaign/:slug" element={<CampaignDetail />} />
           <Route path="/campaigns/:slug" element={<Campaign />} />
           <Route path="/create-campaign" element={<CreateCampaign />} />

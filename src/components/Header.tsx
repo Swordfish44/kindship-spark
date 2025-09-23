@@ -43,7 +43,7 @@ const Header: React.FC = () => {
         {/* Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/discover')}
             className="text-sm font-medium hover:text-primary transition-smooth"
           >
             Discover
