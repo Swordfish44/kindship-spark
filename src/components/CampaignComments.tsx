@@ -4,7 +4,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { MessageCircle, Reply, Heart } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { MessageCircle, Reply, Heart, Send, Edit3, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -21,6 +22,8 @@ interface Comment {
     email: string;
   };
   replies?: Comment[];
+  likes_count?: number;
+  is_liked?: boolean;
 }
 
 interface CampaignCommentsProps {
@@ -35,6 +38,8 @@ const CampaignComments = ({ campaignId }: CampaignCommentsProps) => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -208,46 +213,132 @@ const CampaignComments = ({ campaignId }: CampaignCommentsProps) => {
     }
   };
 
+  const editComment = async (commentId: string) => {
+    if (!editContent.trim()) return;
+    
+    setSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('campaign_comments')
+        .update({ content: editContent.trim() })
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      setEditingComment(null);
+      setEditContent('');
+      toast({
+        title: "Comment updated",
+        description: "Your comment has been updated successfully.",
+      });
+      
+      await fetchComments();
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      toast({
+        title: "Failed to update comment",
+        description: "Unable to update your comment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => (
-    <div className={`${isReply ? 'ml-12' : ''}`}>
+    <div className={`${isReply ? 'ml-12 pl-4 border-l-2 border-muted' : ''} animate-fade-in`}>
       <div className="flex space-x-3">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="text-xs">
+        <Avatar className="h-8 w-8 hover-scale">
+          <AvatarFallback className="text-xs bg-gradient-to-br from-primary to-primary-glow text-white">
             {getInitials(comment.user.full_name)}
           </AvatarFallback>
         </Avatar>
         
         <div className="flex-1 space-y-2">
-          <div className="flex items-center space-x-2">
-            <span className="font-medium text-sm">{comment.user.full_name}</span>
-            <span className="text-xs text-muted-foreground">
-              {formatDate(comment.created_at)}
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="font-medium text-sm">{comment.user.full_name}</span>
+              <span className="text-xs text-muted-foreground">
+                {formatDate(comment.created_at)}
+              </span>
+              {comment.updated_at !== comment.created_at && (
+                <Badge variant="outline" className="text-xs px-1 py-0">
+                  edited
+                </Badge>
+              )}
+            </div>
+            {user?.id === comment.user_id && (
+              <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingComment(comment.id);
+                    setEditContent(comment.content);
+                  }}
+                  className="h-6 w-6 p-0"
+                >
+                  <Edit3 className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
           </div>
           
-          <p className="text-sm text-foreground whitespace-pre-wrap">
-            {comment.content}
-          </p>
-          
-          {!isReply && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
-              className="text-xs h-auto p-1"
-            >
-              <Reply className="h-3 w-3 mr-1" />
-              Reply
-            </Button>
+          {editingComment === comment.id ? (
+            <div className="space-y-2">
+              <Textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="min-h-[80px]"
+              />
+              <div className="flex space-x-2">
+                <Button
+                  size="sm"
+                  onClick={() => editComment(comment.id)}
+                  disabled={!editContent.trim() || submitting}
+                >
+                  <Send className="h-3 w-3 mr-1" />
+                  Save
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditingComment(null);
+                    setEditContent('');
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+              {comment.content}
+            </p>
           )}
+          
+          <div className="flex items-center space-x-4">
+            {!isReply && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setReplyTo(replyTo === comment.id ? null : comment.id)}
+                className="text-xs h-auto p-1 hover:bg-muted/50 transition-colors"
+              >
+                <Reply className="h-3 w-3 mr-1" />
+                Reply
+              </Button>
+            )}
+          </div>
 
           {replyTo === comment.id && (
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 space-y-2 animate-scale-in">
               <Textarea
-                placeholder="Write a reply..."
+                placeholder="Write a thoughtful reply..."
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
-                className="min-h-[80px]"
+                className="min-h-[80px] focus:ring-2 focus:ring-primary/20"
               />
               <div className="flex space-x-2">
                 <Button
@@ -255,7 +346,8 @@ const CampaignComments = ({ campaignId }: CampaignCommentsProps) => {
                   onClick={() => submitReply(comment.id)}
                   disabled={!replyContent.trim() || submitting}
                 >
-                  Post Reply
+                  <Send className="h-3 w-3 mr-1" />
+                  {submitting ? 'Posting...' : 'Post Reply'}
                 </Button>
                 <Button
                   variant="ghost"
@@ -302,31 +394,54 @@ const CampaignComments = ({ campaignId }: CampaignCommentsProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-2">
-        <MessageCircle className="h-5 w-5" />
-        <h2 className="text-xl font-semibold">
-          Comments ({comments.reduce((total, comment) => total + 1 + (comment.replies?.length || 0), 0)})
-        </h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <MessageCircle className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">Discussion</h2>
+            <p className="text-sm text-muted-foreground">
+              {comments.reduce((total, comment) => total + 1 + (comment.replies?.length || 0), 0)} comments
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* New Comment Form */}
-      <Card className="p-4">
+      <Card className="p-6 hover:shadow-md transition-shadow">
         <div className="space-y-4">
+          {user && (
+            <div className="flex items-center space-x-3 mb-4">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-gradient-to-br from-primary to-primary-glow text-white text-xs">
+                  {getInitials(user.user_metadata?.full_name || user.email)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium">Share your thoughts</span>
+            </div>
+          )}
+          
           <Textarea
-            placeholder={user ? "Share your thoughts about this campaign..." : "Please sign in to leave a comment"}
+            placeholder={user ? "What do you think about this campaign? Share your support, questions, or feedback..." : "Please sign in to join the conversation"}
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            className="min-h-[100px]"
+            className="min-h-[120px] focus:ring-2 focus:ring-primary/20 transition-all"
             disabled={!user}
           />
+          
           <div className="flex justify-between items-center">
-            <span className="text-xs text-muted-foreground">
-              {!user ? 'Sign in to participate in the discussion' : 'Be respectful and constructive'}
-            </span>
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-muted-foreground">
+                {!user ? 'Sign in to participate in the discussion' : 'Be respectful and constructive in your comments'}
+              </span>
+            </div>
             <Button
               onClick={submitComment}
               disabled={!newComment.trim() || submitting || !user}
+              className="hover-scale"
             >
+              <Send className="h-4 w-4 mr-2" />
               {submitting ? 'Posting...' : 'Post Comment'}
             </Button>
           </div>
@@ -334,18 +449,25 @@ const CampaignComments = ({ campaignId }: CampaignCommentsProps) => {
       </Card>
 
       {/* Comments List */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {comments.length === 0 ? (
-          <Card className="p-8 text-center">
-            <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h3 className="font-medium mb-2">No comments yet</h3>
-            <p className="text-sm text-muted-foreground">
-              Be the first to share your thoughts about this campaign!
+          <Card className="p-12 text-center">
+            <div className="p-4 bg-muted/30 rounded-full w-fit mx-auto mb-6">
+              <MessageCircle className="h-12 w-12 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">Start the conversation</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Be the first to share your thoughts, ask questions, or show support for this campaign!
             </p>
+            {!user && (
+              <Button variant="outline" className="mt-4" asChild>
+                <a href="/auth">Sign in to comment</a>
+              </Button>
+            )}
           </Card>
         ) : (
           comments.map((comment, index) => (
-            <Card key={comment.id} className="p-4">
+            <Card key={comment.id} className="p-6 group hover:shadow-md transition-all hover:bg-muted/20">
               <CommentItem comment={comment} />
               {index < comments.length - 1 && <Separator className="mt-6" />}
             </Card>

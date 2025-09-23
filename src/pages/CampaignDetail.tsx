@@ -55,14 +55,21 @@ const CampaignDetail = () => {
   const [donationModalOpen, setDonationModalOpen] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [donationCount, setDonationCount] = useState(0);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     if (slug) {
       fetchCampaign();
       fetchRewardTiers();
       fetchDonationStats();
+      getCurrentUser();
     }
   }, [slug]);
+
+  const getCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+  };
 
   const fetchCampaign = async () => {
     try {
@@ -272,7 +279,10 @@ const CampaignDetail = () => {
               </TabsContent>
               
               <TabsContent value="updates" className="mt-6">
-                <CampaignUpdates campaignId={campaign.id} />
+                <CampaignUpdates 
+                  campaignId={campaign.id} 
+                  isOwner={campaign.organizer_id === user?.id}
+                />
               </TabsContent>
               
               <TabsContent value="comments" className="mt-6">
