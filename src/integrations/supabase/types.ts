@@ -873,6 +873,24 @@ export type Database = {
           title: string
         }[]
       }
+      public_discover_campaigns: {
+        Args: {
+          p_page?: number
+          p_search?: string
+          p_size?: number
+          p_sort?: string
+        }
+        Returns: {
+          created_at: string
+          currency: string
+          description: string
+          funding_goal_cents: number
+          image_url: string
+          raised_cents: number
+          slug: string
+          title: string
+        }[]
+      }
       refresh_mv_donations_30d: {
         Args: Record<PropertyKey, never>
         Returns: undefined
