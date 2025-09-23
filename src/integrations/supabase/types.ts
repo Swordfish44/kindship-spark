@@ -620,7 +620,14 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      mv_donations_30d: {
+        Row: {
+          day: string | null
+          donation_count: number | null
+          total_amount: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_platform_fee: {
@@ -637,6 +644,10 @@ export type Database = {
       }
       increment_reward_tier_claimed: {
         Args: { tier_id_param: string }
+        Returns: undefined
+      }
+      refresh_mv_donations_30d: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }
