@@ -1,11 +1,34 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Heart, User } from "lucide-react";
+import { Search, Heart, User, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    // Check initial auth state
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    checkUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -19,15 +42,26 @@ const Header: React.FC = () => {
 
         {/* Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          <a href="#" className="text-sm font-medium hover:text-primary transition-smooth">
+          <button
+            onClick={() => navigate('/')}
+            className="text-sm font-medium hover:text-primary transition-smooth"
+          >
             Discover
-          </a>
+          </button>
           <a href="#" className="text-sm font-medium hover:text-primary transition-smooth">
             Categories
           </a>
           <a href="#" className="text-sm font-medium hover:text-primary transition-smooth">
             How it works
           </a>
+          {user && (
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="text-sm font-medium hover:text-primary transition-smooth"
+            >
+              Dashboard
+            </button>
+          )}
         </nav>
 
         {/* Search */}
@@ -46,13 +80,27 @@ const Header: React.FC = () => {
           <Button variant="ghost" size="icon" className="md:hidden">
             <Search className="h-4 w-4" />
           </Button>
-          <Button variant="outline" onClick={() => navigate('/auth')}>
-            <User className="h-4 w-4 mr-2" />
-            Sign In
-          </Button>
-          <Button className="hero-gradient text-white font-semibold" onClick={() => navigate('/onboarding')}>
-            Start Campaign
-          </Button>
+          {user ? (
+            <>
+              <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                <Settings className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+              <Button variant="outline" onClick={handleSignOut}>
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => navigate('/auth')}>
+                <User className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+              <Button className="hero-gradient text-white font-semibold" onClick={() => navigate('/onboarding')}>
+                Start Campaign
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>

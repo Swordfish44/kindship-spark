@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -42,10 +42,14 @@ type CampaignFormData = z.infer<typeof campaignSchema>;
 
 const CreateCampaign = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editCampaignId = searchParams.get('edit');
+  const isEditing = !!editCampaignId;
   const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [rewardTiers, setRewardTiers] = useState<RewardTier[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const form = useForm<CampaignFormData>({
@@ -62,7 +66,10 @@ const CreateCampaign = () => {
   useEffect(() => {
     checkAuth();
     fetchCategories();
-  }, []);
+    if (isEditing && editCampaignId) {
+      loadCampaignData(editCampaignId);
+    }
+  }, [isEditing, editCampaignId]);
 
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -76,6 +83,65 @@ const CreateCampaign = () => {
       return;
     }
     setCurrentUser(user);
+  };
+
+  const loadCampaignData = async (campaignId: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Load campaign data
+      const { data: campaign, error: campaignError } = await supabase
+        .from("campaigns")
+        .select("*")
+        .eq("id", campaignId)
+        .single();
+
+      if (campaignError) throw campaignError;
+
+      // Check if user is the organizer
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || campaign.organizer_id !== user.id) {
+        toast({
+          title: "Access denied",
+          description: "You can only edit your own campaigns.",
+          variant: "destructive",
+        });
+        navigate("/dashboard");
+        return;
+      }
+
+      // Load reward tiers
+      const { data: tiers, error: tiersError } = await supabase
+        .from("reward_tiers")
+        .select("*")
+        .eq("campaign_id", campaignId)
+        .order("minimum_amount");
+
+      if (tiersError) throw tiersError;
+
+      // Update form with campaign data
+      form.reset({
+        title: campaign.title,
+        description: campaign.description,
+        funding_goal: campaign.funding_goal,
+        category_id: campaign.category_id,
+        image_url: campaign.image_url || "",
+      });
+
+      // Update reward tiers
+      setRewardTiers(tiers || []);
+
+    } catch (error: any) {
+      console.error("Error loading campaign:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load campaign data.",
+        variant: "destructive",
+      });
+      navigate("/dashboard");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchCategories = async () => {
@@ -125,64 +191,138 @@ const CreateCampaign = () => {
 
     setIsSubmitting(true);
     try {
-      // Create campaign
-      const { data: campaign, error: campaignError } = await supabase
-        .from("campaigns")
-        .insert({
-          title: data.title,
-          description: data.description,
-          funding_goal: data.funding_goal,
-          category_id: data.category_id,
-          image_url: data.image_url || null,
-          organizer_id: currentUser.id,
-          status: "draft",
-        })
-        .select()
-        .single();
+      if (isEditing && editCampaignId) {
+        // Update existing campaign
+        const { data: campaign, error: campaignError } = await supabase
+          .from("campaigns")
+          .update({
+            title: data.title,
+            description: data.description,
+            funding_goal: data.funding_goal,
+            category_id: data.category_id,
+            image_url: data.image_url || null,
+          })
+          .eq("id", editCampaignId)
+          .select()
+          .single();
 
-      if (campaignError) throw campaignError;
+        if (campaignError) throw campaignError;
 
-      // Create reward tiers if any
-      if (rewardTiers.length > 0) {
-        const validTiers = rewardTiers.filter(tier => 
-          tier.title.trim() && tier.description.trim() && tier.minimum_amount > 0
-        );
-
-        if (validTiers.length > 0) {
-          const { error: tiersError } = await supabase
+        // Handle reward tiers update
+        if (rewardTiers.length > 0) {
+          // Delete existing reward tiers
+          await supabase
             .from("reward_tiers")
-            .insert(
-              validTiers.map(tier => ({
-                campaign_id: campaign.id,
-                title: tier.title,
-                description: tier.description,
-                minimum_amount: tier.minimum_amount,
-                quantity_limit: tier.quantity_limit || null,
-                estimated_delivery: tier.estimated_delivery || null,
-              }))
-            );
+            .delete()
+            .eq("campaign_id", editCampaignId);
 
-          if (tiersError) throw tiersError;
+          // Insert updated reward tiers
+          const validTiers = rewardTiers.filter(tier => 
+            tier.title.trim() && tier.description.trim() && tier.minimum_amount > 0
+          );
+
+          if (validTiers.length > 0) {
+            const { error: tiersError } = await supabase
+              .from("reward_tiers")
+              .insert(
+                validTiers.map(tier => ({
+                  campaign_id: editCampaignId,
+                  title: tier.title,
+                  description: tier.description,
+                  minimum_amount: tier.minimum_amount,
+                  quantity_limit: tier.quantity_limit || null,
+                  estimated_delivery: tier.estimated_delivery || null,
+                }))
+              );
+
+            if (tiersError) throw tiersError;
+          }
         }
+
+        toast({
+          title: "Campaign updated!",
+          description: "Your campaign has been updated successfully.",
+        });
+
+        navigate(`/campaign/${campaign.slug || campaign.id}`);
+      } else {
+        // Create new campaign
+        const { data: campaign, error: campaignError } = await supabase
+          .from("campaigns")
+          .insert({
+            title: data.title,
+            description: data.description,
+            funding_goal: data.funding_goal,
+            category_id: data.category_id,
+            image_url: data.image_url || null,
+            organizer_id: currentUser.id,
+            status: "draft",
+          })
+          .select()
+          .single();
+
+        if (campaignError) throw campaignError;
+
+        // Create reward tiers if any
+        if (rewardTiers.length > 0) {
+          const validTiers = rewardTiers.filter(tier => 
+            tier.title.trim() && tier.description.trim() && tier.minimum_amount > 0
+          );
+
+          if (validTiers.length > 0) {
+            const { error: tiersError } = await supabase
+              .from("reward_tiers")
+              .insert(
+                validTiers.map(tier => ({
+                  campaign_id: campaign.id,
+                  title: tier.title,
+                  description: tier.description,
+                  minimum_amount: tier.minimum_amount,
+                  quantity_limit: tier.quantity_limit || null,
+                  estimated_delivery: tier.estimated_delivery || null,
+                }))
+              );
+
+            if (tiersError) throw tiersError;
+          }
+        }
+
+        toast({
+          title: "Campaign created!",
+          description: "Your campaign has been created successfully. You can now review and publish it.",
+        });
+
+        navigate(`/campaign/${campaign.slug || campaign.id}`);
       }
-
-      toast({
-        title: "Campaign created!",
-        description: "Your campaign has been created successfully. You can now review and publish it.",
-      });
-
-      navigate(`/campaign/${campaign.slug || campaign.id}`);
     } catch (error: any) {
-      console.error("Error creating campaign:", error);
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} campaign:`, error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create campaign. Please try again.",
+        description: error.message || `Failed to ${isEditing ? 'update' : 'create'} campaign. Please try again.`,
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container py-8 max-w-4xl">
+          <div className="animate-pulse">
+            <div className="h-8 bg-muted rounded w-48 mb-8"></div>
+            <div className="space-y-4">
+              <div className="h-32 bg-muted rounded"></div>
+              <div className="h-32 bg-muted rounded"></div>
+              <div className="h-32 bg-muted rounded"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -192,14 +332,16 @@ const CreateCampaign = () => {
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Button variant="ghost" asChild>
-            <Link to="/">
+            <Link to={isEditing ? "/dashboard" : "/"}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Create Your Campaign</h1>
-            <p className="text-muted-foreground">Tell your story and bring your project to life</p>
+            <h1 className="text-3xl font-bold">{isEditing ? "Edit Your Campaign" : "Create Your Campaign"}</h1>
+            <p className="text-muted-foreground">
+              {isEditing ? "Update your campaign details" : "Tell your story and bring your project to life"}
+            </p>
           </div>
         </div>
 
