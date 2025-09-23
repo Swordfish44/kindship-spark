@@ -159,6 +159,13 @@ serve(async (req) => {
         await handleChargeRefunded(supabase, event.data.object);
         break;
         
+      case 'payout.paid':
+      case 'payout.failed':
+      case 'payout.canceled':
+      case 'payout.created':
+        await handlePayoutEvent(supabase, event.data.object, event);
+        break;
+        
       default:
         logEvent('warn', 'unhandled_event_type', { eventType: event.type, eventId: event.id });
         break;
@@ -743,5 +750,75 @@ async function sendDonationEmails(supabase: any, donationData: {
       donationId, 
       paymentIntentId 
     });
+  }
+}
+
+async function handlePayoutEvent(supabase: any, payout: any, event: any) {
+  logEvent('info', 'processing_payout_event', { 
+    payoutId: payout.id, 
+    eventType: event.type,
+    account: event.account 
+  });
+  
+  try {
+    const acct = event.account as string | undefined; // Connected account id (acct_...)
+    
+    if (!acct) {
+      logEvent('warn', 'payout_event_missing_account', { payoutId: payout.id });
+      return;
+    }
+
+    // Map account to organizer
+    const { data: org, error: orgError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('stripe_account_id', acct)
+      .single();
+      
+    if (orgError || !org?.id) {
+      logEvent('error', 'organizer_not_found_for_payout', { 
+        error: orgError?.message, 
+        stripeAccountId: acct,
+        payoutId: payout.id 
+      });
+      return;
+    }
+
+    const payload = {
+      organizer_id: org.id,
+      stripe_account_id: acct,
+      stripe_payout_id: payout.id,
+      amount_cents: payout.amount,
+      status: payout.status || 'paid',
+      created_at: new Date((payout.created || Math.floor(Date.now()/1000)) * 1000).toISOString()
+    };
+    
+    // Upsert by payout id
+    const { error: payoutError } = await supabase
+      .from('payouts')
+      .upsert(payload, { onConflict: 'stripe_payout_id' });
+      
+    if (payoutError) {
+      logEvent('error', 'payout_upsert_failed', { 
+        error: payoutError.message, 
+        payoutId: payout.id,
+        organizerId: org.id 
+      });
+      throw payoutError;
+    }
+    
+    logEvent('info', 'payout_event_processed', { 
+      payoutId: payout.id, 
+      organizerId: org.id,
+      status: payout.status,
+      amountCents: payout.amount 
+    });
+    
+  } catch (error) {
+    logEvent('error', 'payout_event_processing_failed', { 
+      error: error.message, 
+      payoutId: payout.id 
+    });
+    throw error;
   }
 }

@@ -1,4 +1,19 @@
 project_id = "uobgytlnzmngwxmweufu"
 
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.signed-upload]
+verify_jwt = false
+
+[functions.stripe-connect]
+verify_jwt = false
+
 [functions.stripe-webhooks]
+verify_jwt = false
+
+[functions.sync-ledger]
+verify_jwt = false
+
+[functions.ledger-export]
 verify_jwt = false

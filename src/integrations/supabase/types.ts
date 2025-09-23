@@ -56,6 +56,13 @@ export type Database = {
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "campaign_analytics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vw_ledger_by_campaign"
+            referencedColumns: ["campaign_id"]
+          },
         ]
       }
       campaign_categories: {
@@ -125,6 +132,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "campaign_comments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vw_ledger_by_campaign"
+            referencedColumns: ["campaign_id"]
+          },
+          {
             foreignKeyName: "campaign_comments_parent_comment_id_fkey"
             columns: ["parent_comment_id"]
             isOneToOne: false
@@ -180,6 +194,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "campaign_team_members_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vw_ledger_by_campaign"
+            referencedColumns: ["campaign_id"]
+          },
+          {
             foreignKeyName: "campaign_team_members_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
@@ -233,6 +254,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_updates_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vw_ledger_by_campaign"
+            referencedColumns: ["campaign_id"]
           },
         ]
       }
@@ -363,7 +391,9 @@ export type Database = {
           platform_fee_cents: number | null
           refunded_cents: number | null
           reward_tier_id: string | null
+          stripe_balance_txn_id: string | null
           stripe_charge_id: string | null
+          stripe_fee_cents: number | null
           stripe_payment_intent_id: string | null
         }
         Insert: {
@@ -385,7 +415,9 @@ export type Database = {
           platform_fee_cents?: number | null
           refunded_cents?: number | null
           reward_tier_id?: string | null
+          stripe_balance_txn_id?: string | null
           stripe_charge_id?: string | null
+          stripe_fee_cents?: number | null
           stripe_payment_intent_id?: string | null
         }
         Update: {
@@ -407,7 +439,9 @@ export type Database = {
           platform_fee_cents?: number | null
           refunded_cents?: number | null
           reward_tier_id?: string | null
+          stripe_balance_txn_id?: string | null
           stripe_charge_id?: string | null
+          stripe_fee_cents?: number | null
           stripe_payment_intent_id?: string | null
         }
         Relationships: [
@@ -417,6 +451,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vw_ledger_by_campaign"
+            referencedColumns: ["campaign_id"]
           },
           {
             foreignKeyName: "donations_donor_id_fkey"
@@ -446,6 +487,8 @@ export type Database = {
           platform_fee_cents: number | null
           processed_at: string | null
           status: Database["public"]["Enums"]["payout_status"] | null
+          stripe_account_id: string | null
+          stripe_payout_id: string | null
           stripe_transfer_id: string | null
         }
         Insert: {
@@ -459,6 +502,8 @@ export type Database = {
           platform_fee_cents?: number | null
           processed_at?: string | null
           status?: Database["public"]["Enums"]["payout_status"] | null
+          stripe_account_id?: string | null
+          stripe_payout_id?: string | null
           stripe_transfer_id?: string | null
         }
         Update: {
@@ -472,6 +517,8 @@ export type Database = {
           platform_fee_cents?: number | null
           processed_at?: string | null
           status?: Database["public"]["Enums"]["payout_status"] | null
+          stripe_account_id?: string | null
+          stripe_payout_id?: string | null
           stripe_transfer_id?: string | null
         }
         Relationships: [
@@ -481,6 +528,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payouts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vw_ledger_by_campaign"
+            referencedColumns: ["campaign_id"]
           },
           {
             foreignKeyName: "payouts_organizer_id_fkey"
@@ -613,6 +667,13 @@ export type Database = {
             referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "reward_tiers_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "vw_ledger_by_campaign"
+            referencedColumns: ["campaign_id"]
+          },
         ]
       }
       users: {
@@ -691,6 +752,32 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_ledger_by_campaign: {
+        Row: {
+          campaign_id: string | null
+          donations_count: number | null
+          gross_cents: number | null
+          net_to_organizer_cents: number | null
+          platform_fee_cents: number | null
+          refund_cents: number | null
+          slug: string | null
+          stripe_fee_cents: number | null
+          title: string | null
+        }
+        Relationships: []
+      }
+      vw_ledger_daily: {
+        Row: {
+          day: string | null
+          donations_count: number | null
+          gross_cents: number | null
+          net_to_organizer_cents: number | null
+          platform_fee_cents: number | null
+          refund_cents: number | null
+          stripe_fee_cents: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_platform_fee: {
@@ -743,6 +830,14 @@ export type Database = {
       refresh_mv_donations_30d: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      select_donations_for_fee_backfill: {
+        Args: { p_limit: number; p_since: string }
+        Returns: {
+          campaign_id: string
+          organizer_acct: string
+          pi: string
+        }[]
       }
     }
     Enums: {
