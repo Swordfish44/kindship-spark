@@ -11,7 +11,7 @@ export default function Embed() {
   const q = parseQuery(location.search)
   const amounts = (q.amounts ? q.amounts.split(',').map((x:string)=> Number(x)) : [2500,5000,10000,25000])
   const currency = q.currency || 'USD'
-  const checkoutEndpoint = import.meta.env.VITE_CHECKOUT_ENDPOINT as string
+  const checkoutEndpoint = 'https://uobgytlnzmngwxmweufu.functions.supabase.co/create-checkout'
 
   React.useEffect(() => {
     const ro = new ResizeObserver(() => {

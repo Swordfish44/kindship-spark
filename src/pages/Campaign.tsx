@@ -1,20 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/integrations/supabase/client'
 import DonateWidget from '@/components/DonateWidget'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { money } from '@/lib/utils'
 
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL!, import.meta.env.VITE_SUPABASE_ANON_KEY!)
-
 export default function Campaign() {
   const { slug } = useParams()
   const [campaign, setCampaign] = useState<any>(null)
   const [stats, setStats] = useState<{ raised_cents: number } | null>(null)
   const [loading, setLoading] = useState(true)
-  const checkoutEndpoint = import.meta.env.VITE_CHECKOUT_ENDPOINT as string
+  const checkoutEndpoint = 'https://uobgytlnzmngwxmweufu.functions.supabase.co/create-checkout'
 
   useEffect(() => {
     if (!slug) return

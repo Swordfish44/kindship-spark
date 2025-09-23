@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/integrations/supabase/client'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -9,9 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import { money } from '@/lib/utils'
 import { Share2, ExternalLink } from 'lucide-react'
 
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL!, import.meta.env.VITE_SUPABASE_ANON_KEY!)
-
-type Row = { slug:string; title:string; description:string; hero_image_url?:string; goal_cents:number; currency:string; raised_cents:number; created_at:string }
+type Row = { slug:string; title:string; description:string; hero_image_url?:string; funding_goal_cents:number; currency:string; raised_cents:number; created_at:string }
 
 export default function Discover(){
   const [q,setQ] = useState('')
@@ -19,7 +17,7 @@ export default function Discover(){
   const [page,setPage] = useState(1)
   const [rows,setRows] = useState<Row[]>([])
   const [loading,setLoading] = useState(true)
-  const shareBase = (import.meta.env.VITE_SHARE_BASE || '').replace(/\/$/,'')
+  const shareBase = 'https://uobgytlnzmngwxmweufu.functions.supabase.co/share-campaign'
 
   async function load(){
     setLoading(true)
@@ -66,7 +64,7 @@ export default function Discover(){
 
 function DiscoverCard({ row, shareBase }: { row: Row; shareBase: string }){
   const raised = row.raised_cents || 0
-  const goal = Math.max(1, row.goal_cents || 0)
+  const goal = Math.max(1, row.funding_goal_cents || 0)
   const pct = Math.min(100, Math.round((raised/goal)*100))
   const shareUrl = shareBase ? `${shareBase}/${row.slug}` : ''
   return (
