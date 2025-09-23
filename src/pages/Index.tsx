@@ -6,6 +6,8 @@ import Header from "@/components/Header";
 import CampaignCard from "@/components/CampaignCard";
 import heroImage from "@/assets/hero-crowdfunding.jpg";
 
+// Fix for Link import issue
+
 const Index = () => {
   // Mock data for campaigns
   const featuredCampaigns = [
