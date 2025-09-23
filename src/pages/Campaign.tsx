@@ -18,10 +18,18 @@ export default function Campaign() {
     if (!slug) return
     ;(async () => {
       setLoading(true)
-      const { data: camp } = await supabase
+      const { data: camp, error } = await supabase
         .from('campaigns')
-        .select('id, title, description, hero_image_url, goal_cents, currency, status, slug')
-        .eq('slug', slug).single()
+        .select('id, title, description, image_url, funding_goal_cents, status, slug')
+        .eq('slug', slug)
+        .maybeSingle()
+      
+      if (error) {
+        console.error('Error fetching campaign:', error)
+        setLoading(false)
+        return
+      }
+      
       setCampaign(camp)
       const { data: s } = await supabase.rpc('public_campaign_stats', { sl: slug })
       if (s && s.length) setStats({ raised_cents: Number(s[0].raised_cents || 0) })
@@ -32,23 +40,29 @@ export default function Campaign() {
   const progress = useMemo(() => {
     if (!campaign) return 0
     const raised = stats?.raised_cents || 0
-    const goal = Math.max(1, Number(campaign.goal_cents || 0))
+    const goal = Math.max(1, Number(campaign.funding_goal_cents || 0))
     return Math.min(100, Math.round((raised / goal) * 100))
   }, [campaign, stats])
 
   if (loading) return <main className="page"><div className="container-nbt py-10">Loading…</div></main>
-  if (!campaign || campaign.status !== 'live') return <main className="page"><div className="container-nbt py-10"><h1>Campaign not available</h1></div></main>
+  if (!campaign) {
+    return <main className="page"><div className="container-nbt py-10"><h1>Campaign not found</h1><p>The campaign you're looking for doesn't exist.</p></div></main>
+  }
+  
+  if (campaign.status !== 'active') {
+    return <main className="page"><div className="container-nbt py-10"><h1>Campaign not available</h1><p>This campaign is not currently active.</p></div></main>
+  }
 
   return (
     <main className="page">
       <div className="container-nbt py-8 grid gap-8 lg:grid-cols-[1.4fr_1fr]">
         <section>
-          <img src={campaign.hero_image_url || 'https://picsum.photos/1200/600'} alt="hero" className="w-full rounded-2xl object-cover aspect-[16/9]" />
+          <img src={campaign.image_url || 'https://picsum.photos/1200/600'} alt="hero" className="w-full rounded-2xl object-cover aspect-[16/9]" />
           <h1 className="mt-4 text-3xl font-bold tracking-tight">{campaign.title}</h1>
           <div className="mt-3"><Progress value={progress} /></div>
           <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-700">
-            <strong>{money(stats?.raised_cents || 0, campaign.currency || 'USD')}</strong>
-            <span>raised of {money(campaign.goal_cents || 0, campaign.currency || 'USD')} goal</span>
+            <strong>{money(stats?.raised_cents || 0, 'USD')}</strong>
+            <span>raised of {money(campaign.funding_goal_cents || 0, 'USD')} goal</span>
             <span>· {progress}%</span>
           </div>
           <article className="prose mt-4 max-w-none">{campaign.description}</article>
@@ -64,7 +78,7 @@ export default function Campaign() {
               <DonateWidget
                 checkoutEndpoint={checkoutEndpoint}
                 campaignSlug={slug!}
-                currency={campaign.currency || 'USD'}
+                currency='USD'
                 amounts={[2500, 5000, 10000, 25000]}
               />
             </CardContent>
