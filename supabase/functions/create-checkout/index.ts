@@ -44,6 +44,33 @@ export default async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
+    // Rate limiting - extract IP and check limits
+    const ip = (req.headers.get('x-forwarded-for')||'').split(',')[0].trim() || 
+               (req.headers.get('cf-connecting-ip')||'').trim() || 
+               'unknown'
+    
+    // 10 checkout attempts per 5 minutes per IP (adjust as needed)
+    const { data: allowed, error: rateLimitError } = await supabase.rpc('rl_take', { 
+      p_action: 'checkout', 
+      p_key: ip, 
+      p_limit: 10, 
+      p_window_seconds: 300 
+    })
+    
+    if (rateLimitError) {
+      console.error('Rate limit check error:', rateLimitError)
+      // Continue on rate limit errors to avoid blocking legitimate users
+    } else if (!allowed) {
+      console.log(`Rate limit exceeded for IP: ${ip}`)
+      return new Response(JSON.stringify({ 
+        error: 'Too many requests. Please try again in a few minutes.' 
+      }), { 
+        status: 429, 
+        headers: { ...cors(origin), 'Content-Type': 'application/json' } 
+      })
+    }
+
+
     // 1) Lookup campaign
     const { data: campaign, error: campErr } = await supabase
       .from('campaigns')

@@ -545,6 +545,24 @@ export type Database = {
           },
         ]
       }
+      ratelimits: {
+        Row: {
+          count: number
+          key: string
+          window_started_at: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          window_started_at?: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       receipt_logs: {
         Row: {
           created_at: string
@@ -894,6 +912,15 @@ export type Database = {
       refresh_mv_donations_30d: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      rl_take: {
+        Args: {
+          p_action: string
+          p_key: string
+          p_limit: number
+          p_window_seconds: number
+        }
+        Returns: boolean
       }
       select_donations_for_fee_backfill: {
         Args: { p_limit: number; p_since: string }
