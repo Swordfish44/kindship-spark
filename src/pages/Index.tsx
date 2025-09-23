@@ -72,12 +72,12 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-white">
               <Badge className="mb-4 bg-white/20 text-white border-white/30 hover:bg-white/30">
-                🚀 Launch Your Dream Project
+                🚀 New: Launch Your Dream Project
               </Badge>
-              <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight">
-                Fund Your Vision,
+              <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight text-red-500">
+                TESTING: Fund Your Vision,
                 <br />
-                <span className="text-accent-glow">Change the World</span>
+                <span className="text-yellow-400">Change the World</span>
               </h1>
               <p className="text-lg lg:text-xl mb-8 text-white/90 leading-relaxed">
                 Join thousands of creators and backers bringing innovative projects to life. 
