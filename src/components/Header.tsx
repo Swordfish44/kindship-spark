@@ -25,7 +25,7 @@ const Header: React.FC = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="hidden md:flex items-center space-x-6">
+        <nav className="hidden md:flex items-center space-x-6 ml-12">
           <button
             onClick={() => navigate('/discover')}
             className="text-sm font-medium hover:text-primary transition-smooth"
