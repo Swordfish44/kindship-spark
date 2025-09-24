@@ -128,12 +128,12 @@ const Auth = () => {
             className="mb-4 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to FundFlow
+            Back to The National Black Treasury
           </Button>
           
           <div className="flex items-center justify-center mb-4">
             <Heart className="h-8 w-8 text-primary mr-2" />
-            <h1 className="text-2xl font-bold">FundFlow</h1>
+            <h1 className="text-2xl font-bold">The National Black Treasury</h1>
           </div>
           <p className="text-muted-foreground">
             Join our community of changemakers
