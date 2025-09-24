@@ -1259,14 +1259,7 @@ export type Database = {
       }
     }
     Views: {
-      mv_donations_30d: {
-        Row: {
-          day: string | null
-          donation_count: number | null
-          total_amount: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       admin_ledger_by_campaign: {
@@ -1416,10 +1409,6 @@ export type Database = {
           slug: string
           title: string
         }[]
-      }
-      refresh_mv_donations_30d: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
       }
       rl_take: {
         Args: {
