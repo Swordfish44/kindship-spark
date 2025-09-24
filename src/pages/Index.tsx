@@ -72,13 +72,13 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-white">
               <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight drop-shadow-lg">
-                Fund Your Vision,
+                Build Wealth,
                 <br />
-                <span className="text-yellow-300 drop-shadow-lg">Change the World</span>
+                <span className="text-yellow-300 drop-shadow-lg">Empower Communities</span>
               </h1>
               <p className="text-lg lg:text-xl mb-8 text-white/90 leading-relaxed drop-shadow">
-                Join thousands of creators and backers bringing innovative projects to life. 
-                Start your campaign today or discover amazing projects to support.
+                The first definitive platform for community-driven wealth creation. 
+                Fund transformative projects that build lasting economic independence and prosperity.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 font-semibold shadow-xl transform hover:scale-105 transition-all duration-200" asChild>
