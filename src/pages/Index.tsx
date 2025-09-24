@@ -71,9 +71,6 @@ const Index = () => {
         <div className="relative container py-24 lg:py-32">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-white">
-              <Badge className="mb-4 bg-white/20 text-white border-white/30 hover:bg-white/30 backdrop-blur-sm">
-                🚀 New: Launch Your Dream Project
-              </Badge>
               <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight drop-shadow-lg">
                 Fund Your Vision,
                 <br />
