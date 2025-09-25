@@ -1078,6 +1078,39 @@ export type Database = {
           },
         ]
       }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          record_id: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          record_id?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          record_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_achievements: {
         Row: {
           achievement_type: string
@@ -1313,6 +1346,10 @@ export type Database = {
         Args: { amount_cents: number }
         Returns: number
       }
+      can_access_email_data: {
+        Args: { target_email: string }
+        Returns: boolean
+      }
       generate_campaign_slug: {
         Args: { title: string }
         Returns: string
@@ -1362,6 +1399,10 @@ export type Database = {
       is_user_unsubscribed: {
         Args: { email_address: string; email_type_check: string }
         Returns: boolean
+      }
+      log_sensitive_data_access: {
+        Args: { p_action: string; p_record_id?: string; p_table_name: string }
+        Returns: undefined
       }
       public_campaign_stats: {
         Args: { sl: string }
