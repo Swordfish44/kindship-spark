@@ -21,6 +21,8 @@ import AdminFinance from "./pages/AdminFinance";
 import Analytics from "./pages/Analytics";
 import Discover from "./pages/Discover";
 import Embed from "./pages/Embed";
+import StripeConnect from "./pages/StripeConnect";
+import StripeConnectSuccess from "./pages/StripeConnectSuccess";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +77,8 @@ const App = () => (
             <Route path="/embed/:slug" element={<Embed />} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
+            <Route path="/stripe-connect" element={<StripeConnect />} />
+            <Route path="/stripe-connect/success" element={<StripeConnectSuccess />} />
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
