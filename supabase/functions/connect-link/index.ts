@@ -1,4 +1,3 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import Stripe from 'https://esm.sh/stripe@14.23.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.46.1'
 
@@ -19,7 +18,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-export default async (req: Request): Promise<Response> => {
+Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -44,7 +43,10 @@ export default async (req: Request): Promise<Response> => {
     });
   }
 
-  const stripe = new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' });
+  const stripe = new Stripe(stripeSecretKey, { 
+    apiVersion: '2023-10-16',
+    typescript: true
+  });
 
   // Use the caller's JWT context (authenticated user)
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -161,4 +163,4 @@ export default async (req: Request): Promise<Response> => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
-};
+});

@@ -77,17 +77,22 @@ export default function OrganizerPayoutSetup({
       setLoading(true);
       setError(null);
 
-      // Call the connect-link edge function
-      const { data, error } = await supabase.functions.invoke('connect-link', {
-        body: {},
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+        // Call the connect-link edge function using direct HTTP
+        const response = await fetch('https://uobgytlnzmngwxmweufu.functions.supabase.co/connect-link', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: JSON.stringify({})
+        });
 
-      if (error) {
-        throw new Error(error.message || 'Failed to create onboarding link');
-      }
+        if (!response.ok) {
+          const errorData = await response.text();
+          throw new Error(`HTTP ${response.status}: ${errorData}`);
+        }
+
+        const data = await response.json();
 
       if (!data?.url) {
         throw new Error('No onboarding URL received');
