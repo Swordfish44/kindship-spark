@@ -131,11 +131,11 @@ serve(async (req) => {
 
   } catch (error) {
     logEvent('error', 'signed_upload_failed', { 
-      error: error.message, 
-      stack: error.stack?.split('\n').slice(0, 3).join('\n') 
+      error: (error as Error).message || 'Unknown error',
+      stack: (error as Error).stack?.split('\n').slice(0, 3).join('\n')
     });
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: (error as Error).message || 'Unknown error',
       timestamp: new Date().toISOString() 
     }), {
       status: 500,

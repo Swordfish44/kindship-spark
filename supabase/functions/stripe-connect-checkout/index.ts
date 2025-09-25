@@ -280,7 +280,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
             metadata: session.metadata,
             transferInfo: transferInfo,
             // Line items information
-            lineItems: session.line_items?.data?.map(item => ({
+            lineItems: session.line_items?.data?.map((item: any) => ({
               description: item.description,
               quantity: item.quantity,
               amount: item.amount_total,

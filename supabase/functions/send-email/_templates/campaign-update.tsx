@@ -38,7 +38,7 @@ export const CampaignUpdateEmail = ({
         <Section style={header}>
           <Text style={campaignLabel}>Campaign Update</Text>
           <Heading style={h1}>{updateTitle}</Heading>
-          <Text style={campaignTitle}>{campaignTitle}</Text>
+          <Text>{campaignTitle}</Text>
         </Section>
         
         <Section style={contentSection}>

@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
             unique_visitors: data?.isUnique ? 1 : 0,
           }, {
             onConflict: 'campaign_id,recorded_date',
-            count: 'none'
+            count: undefined
           })
 
         // Update hourly analytics
@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
             unique_visitors: data?.isUnique ? 1 : 0,
           }, {
             onConflict: 'campaign_id,recorded_at',
-            count: 'none'
+            count: undefined
           })
         break
 
@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
             social_shares: 1,
           }, {
             onConflict: 'campaign_id,recorded_date',
-            count: 'none'
+            count: undefined
           })
 
         await supabase
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
             social_shares: 1,
           }, {
             onConflict: 'campaign_id,recorded_at',
-            count: 'none'
+            count: undefined
           })
         break
 
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
             email_opens: 1,
           }, {
             onConflict: 'campaign_id,recorded_at',
-            count: 'none'
+            count: undefined
           })
         break
 
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
             email_clicks: 1,
           }, {
             onConflict: 'campaign_id,recorded_at',
-            count: 'none'
+            count: undefined
           })
         break
 
@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
             geographic_data: data?.location ? { [data.location]: 1 } : {},
           }, {
             onConflict: 'campaign_id,recorded_date',
-            count: 'none'
+            count: undefined
           })
         break
 

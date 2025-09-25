@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
             campaignTitle: campaign.title,
             updateTitle,
             updateContent,
-            organizerName: campaign.users?.full_name || 'Campaign Organizer',
+            organizerName: (campaign.users as any)?.full_name || 'Campaign Organizer',
             campaignUrl,
             unsubscribeUrl,
           },

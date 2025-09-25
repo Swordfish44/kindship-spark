@@ -176,11 +176,11 @@ serve(async (req) => {
 
   } catch (error) {
     logEvent('error', 'webhook_processing_failed', { 
-      error: error.message, 
-      stack: error.stack?.split('\n').slice(0, 3).join('\n') 
+      error: (error as Error).message || 'Unknown error',
+      stack: (error as Error).stack?.split('\n').slice(0, 3).join('\n') 
     });
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: (error as Error).message || 'Unknown error',
       timestamp: new Date().toISOString() 
     }), {
       status: 500,
@@ -317,7 +317,7 @@ async function handleCheckoutCompleted(supabase: any, session: any) {
 
   } catch (error) {
     logEvent('error', 'checkout_completion_failed', { 
-      error: error.message, 
+      error: (error as Error).message || 'Unknown error',
       sessionId: session.id 
     });
     throw error;
@@ -574,7 +574,7 @@ async function handleChargeRefunded(supabase: any, charge: any) {
 
   } catch (error) {
     logEvent('error', 'charge_refund_processing_failed', { 
-      error: error.message, 
+      error: (error as Error).message || 'Unknown error',
       chargeId: charge.id 
     });
   }
@@ -696,7 +696,7 @@ async function sendDonationEmails(supabase: any, donationData: {
         }
       } catch (error) {
         logEvent('error', 'receipt_email_exception', { 
-          error: error.message, 
+          error: (error as Error).message || 'Unknown error',
           donorEmail, 
           donationId 
         });
@@ -752,7 +752,7 @@ async function sendDonationEmails(supabase: any, donationData: {
         }
       } catch (error) {
         logEvent('error', 'organizer_email_exception', { 
-          error: error.message, 
+          error: (error as Error).message || 'Unknown error',
           organizerEmail, 
           donationId 
         });
@@ -784,7 +784,7 @@ async function sendDonationEmails(supabase: any, donationData: {
 
   } catch (error) {
     logEvent('error', 'email_sending_failed', { 
-      error: error.message, 
+      error: (error as Error).message || 'Unknown error',
       donationId, 
       paymentIntentId 
     });
@@ -854,7 +854,7 @@ async function handlePayoutEvent(supabase: any, payout: any, event: any) {
     
   } catch (error) {
     logEvent('error', 'payout_event_processing_failed', { 
-      error: error.message, 
+      error: (error as Error).message || 'Unknown error',
       payoutId: payout.id 
     });
     throw error;

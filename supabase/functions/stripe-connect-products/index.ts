@@ -218,7 +218,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
           // Get price information for each product
           const productsWithPrices = await Promise.all(
-            products.data.map(async (product) => {
+            products.data.map(async (product: any) => {
               let priceInfo = null;
               
               if (product.default_price) {
