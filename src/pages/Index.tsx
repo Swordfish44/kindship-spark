@@ -76,9 +76,9 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-white">
               <h1 className="text-4xl lg:text-6xl font-bold mb-6 leading-tight drop-shadow-lg">
-                Build Wealth,
+                <span className="text-yellow-300 drop-shadow-lg">Community Capital</span>
                 <br />
-                <span className="text-yellow-300 drop-shadow-lg">Empower Communities</span>
+                for Lasting Power
               </h1>
               <p className="text-lg lg:text-xl mb-8 text-white/90 leading-relaxed drop-shadow">
                 The first definitive platform for community-driven wealth creation. 
