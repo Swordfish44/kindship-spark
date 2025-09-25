@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Zap, BookOpen, Leaf, Heart, Palette, Users, Trophy, ChefHat } from "lucide-react";
+import { ArrowRight, Briefcase, Users, Newspaper, Home, Wheat, Search, Scale, Heart, Trees, Vote, Folder, GraduationCap, Truck } from "lucide-react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import CampaignCard from "@/components/CampaignCard";
@@ -51,14 +51,19 @@ const Index = () => {
   ];
 
   const categories = [
-    { name: "Technology", count: 1250, icon: Zap },
-    { name: "Education", count: 890, icon: BookOpen },
-    { name: "Environment", count: 654, icon: Leaf },
-    { name: "Health", count: 432, icon: Heart },
-    { name: "Arts & Culture", count: 321, icon: Palette },
-    { name: "Community", count: 234, icon: Users },
-    { name: "Sports", count: 123, icon: Trophy },
-    { name: "Food & Dining", count: 89, icon: ChefHat }
+    { name: "Business Start Engine", count: 1250, icon: Briefcase },
+    { name: "Community Projects", count: 890, icon: Users },
+    { name: "Current Events", count: 654, icon: Newspaper },
+    { name: "Emergency Housing", count: 432, icon: Home },
+    { name: "Farming and Food Deserts", count: 321, icon: Wheat },
+    { name: "Investigations", count: 234, icon: Search },
+    { name: "Legal Defense", count: 195, icon: Scale },
+    { name: "Medical", count: 167, icon: Heart },
+    { name: "Parks and Greenspace", count: 143, icon: Trees },
+    { name: "Political", count: 123, icon: Vote },
+    { name: "Projects", count: 98, icon: Folder },
+    { name: "Trade Education", count: 76, icon: GraduationCap },
+    { name: "Transportation", count: 54, icon: Truck }
   ];
 
   return (
