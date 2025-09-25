@@ -194,9 +194,8 @@ const Index = () => {
       <section className="py-16">
         <div className="container">
           <div className="bg-card rounded-2xl shadow-card p-8 lg:p-12 text-center card-gradient">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Ready to Launch Your Idea?</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Ready to Launch Your Campaign?</h2>
             <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
-              Join our community of innovators and turn your vision into reality. 
               Get the funding and support you need to make an impact.
             </p>
             <Button size="lg" className="hero-gradient text-white font-semibold" asChild>
