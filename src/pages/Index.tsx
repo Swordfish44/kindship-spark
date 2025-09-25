@@ -52,7 +52,7 @@ const Index = () => {
 
   const categories = [
     { name: "Business Start Engine", count: 1250, icon: Briefcase },
-    { name: "Community Projects", count: 890, icon: Users },
+    { name: "Community Development", count: 988, icon: Users },
     { name: "Current Events", count: 654, icon: Newspaper },
     { name: "Emergency Housing", count: 432, icon: Home },
     { name: "Farming and Food Deserts", count: 321, icon: Wheat },
@@ -61,7 +61,6 @@ const Index = () => {
     { name: "Medical", count: 167, icon: Heart },
     { name: "Parks and Greenspace", count: 143, icon: Trees },
     { name: "Political", count: 123, icon: Vote },
-    { name: "Projects", count: 98, icon: Folder },
     { name: "Trade Education", count: 76, icon: GraduationCap },
     { name: "Transportation", count: 54, icon: Truck }
   ];
