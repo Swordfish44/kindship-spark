@@ -161,7 +161,7 @@ export default function AnalyticsOverview() {
 
       setDailyData(formattedDailyData)
 
-      // Load backer insights - simplified query
+      // Load backer insights using secure masked function
       const { data: donations } = await supabase
         .from('donations')
         .select('donor_email')
@@ -172,14 +172,22 @@ export default function AnalyticsOverview() {
 
       if (emails.length > 0) {
         const { data: backerData, error: backerError } = await supabase
-          .from('backer_insights')
-          .select('*')
-          .in('email', emails)
-          .order('engagement_score', { ascending: false })
-          .limit(10)
+          .rpc('get_backer_insights_masked', {
+            p_emails: emails,
+            p_limit: 10
+          })
 
         if (backerError) throw backerError
-        setBackerInsights((backerData || []) as BackerInsight[])
+        setBackerInsights((backerData || []).map(item => ({
+          email: item.masked_email,
+          total_donated_cents: item.total_donated_cents,
+          campaigns_supported: item.campaigns_supported,
+          donation_frequency: item.donation_frequency,
+          engagement_score: item.engagement_score,
+          preferred_categories: item.preferred_categories || [],
+          first_donation_date: item.first_donation_date,
+          last_donation_date: item.last_donation_date
+        })) as BackerInsight[])
       }
 
     } catch (error) {

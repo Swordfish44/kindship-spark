@@ -1354,6 +1354,19 @@ export type Database = {
         Args: { title: string }
         Returns: string
       }
+      get_backer_insights_masked: {
+        Args: { p_emails: string[]; p_limit?: number }
+        Returns: {
+          campaigns_supported: number
+          donation_frequency: string
+          engagement_score: number
+          first_donation_date: string
+          last_donation_date: string
+          masked_email: string
+          preferred_categories: string[]
+          total_donated_cents: number
+        }[]
+      }
       get_campaign_performance_summary: {
         Args: { p_campaign_id: string; p_days?: number }
         Returns: {
@@ -1403,6 +1416,10 @@ export type Database = {
       log_sensitive_data_access: {
         Args: { p_action: string; p_record_id?: string; p_table_name: string }
         Returns: undefined
+      }
+      mask_email: {
+        Args: { p_email: string }
+        Returns: string
       }
       public_campaign_stats: {
         Args: { sl: string }
