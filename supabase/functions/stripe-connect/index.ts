@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import Stripe from 'https://esm.sh/stripe@14.23.0?target=deno';
 
 // Validation schemas
 const StripeConnectRequestSchema = z.object({
@@ -37,6 +38,12 @@ const corsHeaders = {
 const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+if (!stripeSecretKey) {
+  throw new Error('STRIPE_SECRET_KEY environment variable is required');
+}
+
+const stripe = new Stripe(stripeSecretKey, { apiVersion: '2024-06-20' });
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -88,24 +95,11 @@ serve(async (req) => {
 
         // Create Stripe Express account if it doesn't exist
         if (!accountId) {
-          const createAccountResponse = await fetch('https://api.stripe.com/v1/accounts', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${stripeSecretKey}`,
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-              type: 'express',
-              country: 'US',
-              email: userProfile?.email || user.email || '',
-            }),
+          const account = await stripe.accounts.create({
+            type: 'express',
+            country: 'US',
+            email: userProfile?.email || user.email || '',
           });
-
-          const account = await createAccountResponse.json();
-          
-          if (!createAccountResponse.ok) {
-            throw new Error(`Stripe account creation failed: ${account.error?.message}`);
-          }
 
           accountId = account.id;
 
@@ -116,26 +110,13 @@ serve(async (req) => {
             .eq('id', user.id);
         }
 
-        // Create account link for onboarding
-        const accountLinkResponse = await fetch('https://api.stripe.com/v1/account_links', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${stripeSecretKey}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            account: accountId,
-            refresh_url: `${req.headers.get('origin')}/onboarding?refresh=true`,
-            return_url: `${req.headers.get('origin')}/dashboard`,
-            type: 'account_onboarding',
-          }),
+        // Create account link for onboarding using Stripe SDK
+        const accountLink = await stripe.accountLinks.create({
+          account: accountId,
+          refresh_url: `${req.headers.get('origin')}/onboarding?refresh=true`,
+          return_url: `${req.headers.get('origin')}/dashboard`,
+          type: 'account_onboarding',
         });
-
-        const accountLink = await accountLinkResponse.json();
-        
-        if (!accountLinkResponse.ok) {
-          throw new Error(`Account link creation failed: ${accountLink.error?.message}`);
-        }
 
         return new Response(JSON.stringify({ url: accountLink.url }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -225,17 +206,8 @@ serve(async (req) => {
           });
         }
 
-        const accountResponse = await fetch(`https://api.stripe.com/v1/accounts/${userProfile.stripe_account_id}`, {
-          headers: {
-            'Authorization': `Bearer ${stripeSecretKey}`,
-          },
-        });
-
-        const account = await accountResponse.json();
-        
-        if (!accountResponse.ok) {
-          throw new Error(`Failed to fetch account: ${account.error?.message}`);
-        }
+        // Check account status using Stripe SDK
+        const account = await stripe.accounts.retrieve(userProfile.stripe_account_id);
 
         const onboardingComplete = account.details_submitted && account.charges_enabled;
 

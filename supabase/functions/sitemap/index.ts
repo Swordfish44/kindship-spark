@@ -1,4 +1,3 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.46.1'
 
 const SITE_URL = Deno.env.get('PUBLIC_SITE_URL') || 'http://localhost:8080'
