@@ -12,38 +12,38 @@ const Index = () => {
   // Mock data for campaigns
   const featuredCampaigns = [
     {
-      id: "1",
+      id: "revolutionary-solar-panel-technology",
       title: "Revolutionary Solar Panel Technology for Rural Communities",
       description: "Bringing clean, affordable energy to underserved communities with innovative solar panel designs.",
       image: "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=500",
       category: "Technology",
-      currentAmount: 45800,
-      targetAmount: 75000,
+      currentAmount: 4580000, // In cents for testing
+      targetAmount: 7500000,  // In cents for testing
       backers: 234,
       daysLeft: 18,
       creatorName: "GreenTech Solutions",
       isLiked: true
     },
     {
-      id: "2", 
+      id: "educational-mobile-library", 
       title: "Educational Mobile Library for Remote Schools",
       description: "A mobile library bringing books and digital learning resources to remote schools across the region.",
       image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500",
       category: "Education",
-      currentAmount: 23500,
-      targetAmount: 40000,
+      currentAmount: 2350000, // In cents for testing
+      targetAmount: 4000000,  // In cents for testing
       backers: 156,
       daysLeft: 25,
       creatorName: "Books for All Initiative"
     },
     {
-      id: "3",
+      id: "sustainable-urban-farming-project",
       title: "Sustainable Urban Farming Project",
       description: "Creating vertical farms in urban areas to provide fresh produce to local communities.",
       image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500",
       category: "Environment",
-      currentAmount: 67200,
-      targetAmount: 100000,
+      currentAmount: 6720000, // In cents for testing
+      targetAmount: 10000000, // In cents for testing
       backers: 412,
       daysLeft: 12,
       creatorName: "Urban Harvest Co."

@@ -13,8 +13,8 @@ interface CampaignCardProps {
   description: string;
   image: string;
   category: string;
-  currentAmount: number;
-  targetAmount: number;
+  currentAmount: number; // Expected in cents
+  targetAmount: number;  // Expected in cents
   backers: number;
   daysLeft: number;
   creatorName: string;
