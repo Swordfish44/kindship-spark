@@ -83,6 +83,46 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
 
   const fetchRewardTiers = async () => {
     try {
+      // Check if this is a mock campaign (string ID that doesn't look like UUID)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(campaign.id);
+      
+      if (!isUUID) {
+        // For mock campaigns, create sample reward tiers
+        setRewardTiers([
+          {
+            id: 'mock-1',
+            title: 'Early Supporter',
+            description: 'Get a thank you email and project updates.',
+            minimum_amount_cents: 2500,
+            minimum_amount: 25,
+            quantity_limit: 100,
+            quantity_claimed: 5,
+            is_active: true
+          },
+          {
+            id: 'mock-2', 
+            title: 'Champion Backer',
+            description: 'Receive project updates and exclusive behind-the-scenes content.',
+            minimum_amount_cents: 5000,
+            minimum_amount: 50,
+            quantity_limit: 50,
+            quantity_claimed: 3,
+            is_active: true
+          },
+          {
+            id: 'mock-3',
+            title: 'Premier Supporter',
+            description: 'Get exclusive access and a personalized thank you video.',
+            minimum_amount_cents: 10000,
+            minimum_amount: 100,
+            quantity_limit: 25,
+            quantity_claimed: 1,
+            is_active: true
+          }
+        ]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('reward_tiers')
         .select('*')
@@ -94,6 +134,7 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
       setRewardTiers(data || []);
     } catch (error) {
       console.error('Error fetching reward tiers:', error);
+      setRewardTiers([]); // Fallback to empty array on error
     }
   };
 
@@ -167,6 +208,22 @@ const DonationModal = ({ isOpen, onClose, campaign }: DonationModalProps) => {
     setProcessing(true);
 
     try {
+      // Check if this is a mock campaign
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(campaign.id);
+      
+      if (!isUUID) {
+        // For mock campaigns, show demo success
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing time
+        toast({
+          title: "Demo donation successful!",
+          description: `This was a test with mock campaign data. In a real campaign, ${centsToDisplay(amountCents)} would be processed via Stripe.`,
+        });
+        onClose();
+        // Redirect to thank you page for demo
+        window.location.href = `/thank-you?demo=true&amount=${centsToDisplay(amountCents)}`;
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           campaign_id: campaign.id,
