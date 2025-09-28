@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { Label } from '@/components/ui/label';
 import { Heart, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,52 +28,6 @@ const Auth = () => {
       navigate(from, { replace: true });
     }
   }, [user, navigate, from]);
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl
-        }
-      });
-
-      if (error) {
-        if (error.message.includes('User already registered')) {
-          toast({
-            title: "Account exists",
-            description: "An account with this email already exists. Please sign in instead.",
-            variant: "destructive",
-          });
-          return;
-        }
-        throw error;
-      }
-
-      toast({
-        title: "Welcome!",
-        description: "Account created successfully. Please check your email to verify your account.",
-      });
-
-      // Don't navigate immediately - let the auth state change handle it
-
-    } catch (error) {
-      console.error('Sign up error:', error);
-      toast({
-        title: "Sign up failed",
-        description: error instanceof Error ? error.message : "An error occurred during sign up",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,90 +90,43 @@ const Auth = () => {
             <h1 className="text-2xl font-bold">The National Black Treasury</h1>
           </div>
           <p className="text-muted-foreground">
-            Join our community of changemakers
+            Sign in to your account
           </p>
         </div>
 
         {/* Auth Form */}
         <Card className="p-6">
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
+          <form onSubmit={handleSignIn} className="space-y-4">
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                disabled={loading}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                disabled={loading}
+              />
+            </div>
 
-            <TabsContent value="signin" className="mt-6">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div>
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup" className="mt-6">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div>
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create a password"
-                    required
-                    disabled={loading}
-                    minLength={6}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Password must be at least 6 characters long
-                  </p>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating account...' : 'Create Account'}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign In'}
+            </Button>
+          </form>
         </Card>
 
         <div className="text-center mt-6">
