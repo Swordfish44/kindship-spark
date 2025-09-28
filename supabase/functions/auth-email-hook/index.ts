@@ -50,10 +50,10 @@ Deno.serve(async (req) => {
       )
 
       // Construct verification URL
-      const verificationUrl = `${site_url}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`
+      const verificationUrl = `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${redirect_to}`
 
       // Call our custom send-email function
-      const sendEmailResponse = await fetch(`${site_url}/functions/v1/send-email`, {
+      const sendEmailResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
             recipientEmail: user.email,
             verificationUrl,
             siteName: 'National Black Treasury',
-            siteUrl: Deno.env.get('PUBLIC_SITE_URL') ?? '',
+            siteUrl: Deno.env.get('SUPABASE_URL') ?? '',
           },
         }),
       })
