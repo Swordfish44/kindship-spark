@@ -6,6 +6,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 import { DonationReceiptEmail } from './_templates/donation-receipt.tsx'
 import { CampaignUpdateEmail } from './_templates/campaign-update.tsx'
 import { MarketingNewsletterEmail } from './_templates/marketing-newsletter.tsx'
+import { EmailVerificationEmail } from './_templates/email-verification.tsx'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -74,6 +75,18 @@ Deno.serve(async (req) => {
           })
         )
         subject = data.subject
+        break
+
+      case 'email_verification':
+        html = await renderAsync(
+          React.createElement(EmailVerificationEmail, {
+            verificationUrl: data.verificationUrl,
+            siteName: data.siteName || 'National Black Treasury',
+            siteUrl: data.siteUrl,
+          })
+        )
+        subject = 'Verify your email address - National Black Treasury'
+        fromEmail = 'National Black Treasury <nbt@' + (Deno.env.get('FROM_EMAIL')?.split('@')[1] || 'noreply.com') + '>'
         break
 
       default:
