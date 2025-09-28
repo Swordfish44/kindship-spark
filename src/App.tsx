@@ -17,6 +17,7 @@ import Campaign from "./pages/Campaign";
 import ThankYou from "./pages/ThankYou";
 import Profile from "./pages/Profile";
 import EmailUnsubscribe from './pages/EmailUnsubscribe';
+import EmailVerification from './pages/EmailVerification';
 import AdminFinance from "./pages/AdminFinance";
 import Analytics from "./pages/Analytics";
 import Discover from "./pages/Discover";
@@ -73,6 +74,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/unsubscribe" element={<EmailUnsubscribe />} />
+            <Route path="/verify" element={<EmailVerification />} />
             <Route path="/embed/:slug" element={<Embed />} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/admin/finance" element={<AdminFinance />} />
